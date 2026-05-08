@@ -710,8 +710,40 @@ function submitForm() {
 
   setTimeout(() => {
     const ref = saveBookingToStorage();
+    sendConfirmationEmail(ref);
     showSuccess(ref);
   }, 1200);
+}
+
+function sendConfirmationEmail(ref) {
+  const isRound = formData.tripType === 'round-trip';
+  const fare = formData.estimatedDistance
+    ? calculateFare(formData.vehicle, formData.estimatedDistance, isRound)
+    : null;
+
+  const payload = {
+    ref,
+    name:              formData.name,
+    email:             formData.email,
+    phone:             formData.phone,
+    tripType:          formData.tripType,
+    pickup:            formData.pickup  ? formData.pickup.name  : '',
+    dropoff:           formData.dropoff ? formData.dropoff.name : '',
+    date:              formData.pickupDate,
+    time:              formData.pickupTime,
+    returnDate:        formData.returnDate  || '',
+    returnTime:        formData.returnTime  || '',
+    vehicle:           resolveVehicleName(formData.vehicle),
+    estimatedDistance: formData.estimatedDistance || null,
+    estimatedFare:     fare,
+    notes:             formData.notes || '',
+  };
+
+  fetch('/send-email.php', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify(payload),
+  }).catch(() => {}); // fire-and-forget — never block the confirmation screen
 }
 
 function generateRef() {
