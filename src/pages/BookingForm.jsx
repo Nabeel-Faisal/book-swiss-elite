@@ -248,7 +248,7 @@ export default function BookingForm() {
           pickup: pickup?.name, dropoff: dropoff?.name,
           date: pickupDate, time: pickupTime, returnDate, returnTime,
           vehicle: resolveVehicleName(vehicle), estimatedDistance: estimatedDist, estimatedFare: fare, notes }),
-      }).catch(() => {});
+      }).catch(err => console.error('[Email]', err));
 
       setBookingRef(ref);
       setSubmitting(false);

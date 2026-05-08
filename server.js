@@ -20,27 +20,44 @@ app.post('/api/send-email', async (req, res) => {
     return res.status(400).json({ ok: false, error: 'Missing required fields' });
   }
 
+  const SMTP_USER   = process.env.SMTP_USER;
+  const ADMIN_EMAIL = process.env.ADMIN_EMAIL || SMTP_USER;
+
+  if (!SMTP_USER || !process.env.SMTP_PASS) {
+    console.error('[Mailer] SMTP_USER or SMTP_PASS env var is not set');
+    return res.status(500).json({ ok: false, error: 'SMTP credentials not configured' });
+  }
+
   const transporter = nodemailer.createTransport({
     host:   process.env.SMTP_HOST || 'smtp.hostinger.com',
     port:   parseInt(process.env.SMTP_PORT || '465'),
     secure: true,
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
-    },
+    auth: { user: SMTP_USER, pass: process.env.SMTP_PASS },
     tls: { rejectUnauthorized: false },
   });
 
   try {
+    /* 1. Confirmation to customer */
     await transporter.sendMail({
-      from:    `"Swiss Elite Chauffeur" <${process.env.SMTP_USER}>`,
+      from:    `"Swiss Elite Chauffeur" <${SMTP_USER}>`,
       to:      d.email,
+      replyTo: ADMIN_EMAIL,
       subject: `Booking Confirmed — ${d.ref} | Swiss Elite Chauffeur`,
       html:    buildEmail(d),
     });
+
+    /* 2. Notification to admin */
+    await transporter.sendMail({
+      from:    `"Swiss Elite Bookings" <${SMTP_USER}>`,
+      to:      ADMIN_EMAIL,
+      subject: `🆕 New Booking ${d.ref} — ${d.name} | ${d.pickup} → ${d.dropoff}`,
+      html:    buildAdminEmail(d),
+    });
+
+    console.log(`[Mailer] Booking ${d.ref} — sent to ${d.email} + admin ${ADMIN_EMAIL}`);
     res.json({ ok: true });
   } catch (err) {
-    console.error('[Mailer]', err.message);
+    console.error('[Mailer] Send failed:', err.message, err.response || '');
     res.status(500).json({ ok: false, error: err.message });
   }
 });
@@ -201,6 +218,71 @@ function buildEmail(d) {
       Swiss Elite Chauffeur · Geneva, Switzerland
     </p>
   </td></tr>
+</table>
+</td></tr></table>
+</body></html>`;
+}
+
+/* ── Admin notification email ─────────────────────────── */
+function buildAdminEmail(d) {
+  const isRound = d.tripType === 'round-trip';
+  const fields = [
+    ['Reference',    d.ref],
+    ['Customer',     d.name],
+    ['Email',        d.email],
+    ['Phone',        d.phone || '—'],
+    ['Trip Type',    isRound ? 'Round Trip' : 'One Way'],
+    ['Pickup',       d.pickup || '—'],
+    ['Drop-off',     d.dropoff || '—'],
+    ['Pickup Date',  fmt(d.date)],
+    ['Pickup Time',  fmtT(d.time)],
+    ...(isRound && d.returnDate ? [['Return Date', fmt(d.returnDate)], ['Return Time', fmtT(d.returnTime)]] : []),
+    ['Vehicle',      d.vehicle || '—'],
+    ...(d.estimatedDistance ? [['Est. Distance', `~${d.estimatedDistance} km`]] : []),
+    ...(d.estimatedFare     ? [['Estimated Fare', `CHF ${Number(d.estimatedFare).toLocaleString()}`]] : []),
+    ...(d.notes             ? [['Special Requests', d.notes]] : []),
+  ];
+
+  const rows = fields.map(([label, val]) => `
+    <tr>
+      <td style="padding:9px 16px;border-bottom:1px solid #1a1a1a;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#5a5750;white-space:nowrap;vertical-align:top">${label}</td>
+      <td style="padding:9px 16px;border-bottom:1px solid #1a1a1a;font-size:13px;color:#f0ede6;font-weight:500;vertical-align:top">${val}</td>
+    </tr>`).join('');
+
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#000;font-family:Arial,sans-serif">
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#000;padding:40px 16px"><tr><td align="center">
+<table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%">
+
+  <tr><td align="center" style="padding:0 0 24px">
+    <div style="font-size:20px;font-weight:700;letter-spacing:5px;color:#fff">◆ SWISS <span style="color:#C8A45D">ELITE</span></div>
+    <div style="font-size:9px;letter-spacing:5px;text-transform:uppercase;color:#5a5750;margin-top:5px">NEW BOOKING NOTIFICATION</div>
+  </td></tr>
+
+  <tr><td style="background:#0d0d0d;border:1px solid rgba(255,255,255,0.07);border-radius:16px;overflow:hidden">
+    <div style="height:1px;background:linear-gradient(90deg,#0d0d0d,#C8A45D,#0d0d0d)"></div>
+
+    <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding:24px 28px 16px">
+      <div style="background:rgba(200,164,93,0.09);border:1px solid rgba(200,164,93,0.28);border-radius:12px;padding:16px 20px;display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-size:9px;letter-spacing:3px;text-transform:uppercase;color:#5a5750;margin-bottom:5px">BOOKING REFERENCE</div>
+          <div style="font-size:22px;font-weight:700;color:#C8A45D;letter-spacing:3px">${d.ref}</div>
+        </div>
+      </div>
+    </td></tr></table>
+
+    <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding:0 28px 24px">
+      <div style="font-size:9px;letter-spacing:3px;text-transform:uppercase;color:#C8A45D;margin-bottom:12px">BOOKING DETAILS</div>
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#111;border:1px solid rgba(255,255,255,0.07);border-radius:12px;overflow:hidden">
+        ${rows}
+      </table>
+    </td></tr></table>
+
+    <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="background:rgba(200,164,93,0.07);border-top:1px solid rgba(200,164,93,0.2);padding:16px 28px">
+      <div style="font-size:12px;color:#9e9b93">Manage at: <a href="https://book.swisselitetransfers.com/admin/dashboard" style="color:#C8A45D;text-decoration:none">book.swisselitetransfers.com/admin/dashboard</a></div>
+    </td></tr></table>
+  </td></tr>
+
 </table>
 </td></tr></table>
 </body></html>`;
