@@ -223,6 +223,32 @@ input, select, textarea { font-family:inherit; }
   line-height:1.6;
 }
 
+/* Nav Sections */
+.nav-section { margin-bottom:0.15rem; }
+
+.nav-section-label {
+  font-size:0.55rem;
+  font-weight:700;
+  letter-spacing:0.2em;
+  text-transform:uppercase;
+  color:var(--text-muted);
+  padding:0.9rem 1.1rem 0.3rem;
+  opacity:0.5;
+  white-space:nowrap;
+  overflow:hidden;
+}
+
+.nav-item-logout:hover { color:var(--red); }
+
+/* SVG icons inside nav + topbar */
+.nav-icon svg,
+.icon-btn svg {
+  width:17px;
+  height:17px;
+  display:block;
+  flex-shrink:0;
+}
+
 /* Footer */
 .sidebar-footer {
   padding:0.5rem 0;
@@ -402,7 +428,7 @@ input, select, textarea { font-family:inherit; }
 /* ── Stats Grid ─────────────────────────────────── */
 .stats-grid {
   display:grid;
-  grid-template-columns:repeat(4, 1fr);
+  grid-template-columns:repeat(3, 1fr);
   gap:1rem;
   margin-bottom:1.75rem;
 }
@@ -428,6 +454,10 @@ input, select, textarea { font-family:inherit; }
 .stat-card.green .stat-icon { color:var(--green); background:var(--green-dim); }
 .stat-card.gold  { border-color:var(--gold-border); }
 .stat-card.gold  .stat-icon { color:var(--gold); background:var(--gold-dim); }
+.stat-card.red   { border-color:rgba(248,113,113,0.15); }
+.stat-card.red   .stat-icon { color:var(--red); background:var(--red-dim); }
+.stat-card.blue  { border-color:rgba(96,165,250,0.15); }
+.stat-card.blue  .stat-icon { color:var(--blue); background:var(--blue-dim); }
 
 .stat-icon {
   display:inline-flex;
@@ -456,6 +486,13 @@ input, select, textarea { font-family:inherit; }
   letter-spacing:0.1em;
   text-transform:uppercase;
   color:var(--text-muted);
+}
+
+.stat-sub {
+  font-size:0.7rem;
+  color:var(--text-muted);
+  margin-top:0.4rem;
+  line-height:1.4;
 }
 
 /* ── Panel ──────────────────────────────────────── */
@@ -1033,6 +1070,147 @@ select.form-input {
 .toast-error   { border-left-color:var(--red); }
 .toast-warning { border-left-color:var(--amber); }
 
+/* ── Overview ───────────────────────────────────── */
+.overview-head {
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  margin-bottom:1.75rem;
+}
+
+.overview-date {
+  font-size:0.78rem;
+  color:var(--text-muted);
+  margin-top:0.3rem;
+}
+
+.revenue-card {
+  display:flex;
+  align-items:center;
+  gap:1.5rem;
+  background:linear-gradient(135deg, rgba(201,168,76,0.07) 0%, rgba(201,168,76,0.03) 100%);
+  border:1px solid var(--gold-border);
+  border-radius:var(--radius-lg);
+  padding:1.5rem 2rem;
+  margin-bottom:1.75rem;
+}
+
+.revenue-icon {
+  width:52px; height:52px;
+  border-radius:14px;
+  background:rgba(201,168,76,0.1);
+  border:1px solid var(--gold-border);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:var(--gold);
+  flex-shrink:0;
+}
+
+.revenue-val {
+  font-size:2.2rem;
+  font-weight:700;
+  color:var(--gold);
+  letter-spacing:-0.02em;
+  line-height:1;
+}
+
+.revenue-label {
+  font-size:0.6rem;
+  font-weight:700;
+  letter-spacing:0.18em;
+  text-transform:uppercase;
+  color:var(--text-muted);
+  margin-top:0.4rem;
+}
+
+.revenue-sub {
+  font-size:0.75rem;
+  color:var(--text-muted);
+  margin-top:0.3rem;
+}
+
+.overview-panels {
+  display:grid;
+  grid-template-columns:1fr 300px;
+  gap:1.25rem;
+  align-items:start;
+}
+
+.overview-panel-main,
+.overview-panel-side { margin-bottom:0; }
+
+.panel-head {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:1.1rem;
+}
+
+.ref-code {
+  font-family:monospace;
+  font-size:0.78rem;
+  color:var(--gold);
+  letter-spacing:0.04em;
+}
+
+.td-name {
+  font-size:0.85rem;
+  font-weight:500;
+  color:var(--text);
+}
+
+.td-sub {
+  font-size:0.73rem;
+  color:var(--text-muted);
+  margin-top:0.15rem;
+}
+
+.td-route {
+  font-size:0.78rem;
+  color:var(--text-sec);
+  max-width:180px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.quick-stats { display:flex; flex-direction:column; }
+
+.qs-row {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:0.78rem 0;
+  border-bottom:1px solid var(--border);
+}
+
+.qs-row:last-child { border-bottom:none; }
+.qs-label { font-size:0.78rem; color:var(--text-muted); }
+.qs-val { font-size:0.88rem; font-weight:600; color:var(--text); }
+
+/* Modal head/foot (JSX uses these, not modal-header/modal-footer) */
+.modal-head {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:1.35rem 1.5rem;
+  border-bottom:1px solid var(--border);
+  flex-shrink:0;
+}
+
+.modal-head h3 { font-size:1rem; font-weight:600; color:var(--text); }
+
+.modal-foot {
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:0.65rem;
+  padding:1.1rem 1.5rem;
+  border-top:1px solid var(--border);
+  flex-shrink:0;
+}
+
 /* ── Scrollbar ──────────────────────────────────── */
 ::-webkit-scrollbar { width:5px; height:5px; }
 ::-webkit-scrollbar-track { background:transparent; }
@@ -1042,6 +1220,7 @@ select.form-input {
 /* ── Responsive ─────────────────────────────────── */
 @media (max-width:1200px) {
   .stats-grid { grid-template-columns:repeat(2, 1fr); }
+  .overview-panels { grid-template-columns:1fr; }
 }
 
 @media (max-width:900px) {

@@ -199,17 +199,39 @@ export default function AdminDashboard() {
 
   const currency = pricing.currency || 'CHF';
 
-  /* ── NAV ────────────────────────────────────────────────────── */
-  const navItems = [
-    { id:'overview',      label:'Overview',        icon:'⊞' },
-    { id:'bookings',      label:'Bookings',        icon:'📋', badge: stats.pending || null },
-    { id:'customers',     label:'Customers',       icon:'👤' },
-    { id:'vehicles',      label:'Vehicles',        icon:'🚗' },
-    { id:'pricing',       label:'Pricing',         icon:'💰' },
-    { id:'service-areas', label:'Service Areas',   icon:'🌍' },
-    { id:'form-settings', label:'Form Settings',   icon:'⚙' },
-    { id:'admin-users',   label:'Admin Users',     icon:'🔐' },
-    { id:'settings',      label:'Settings',        icon:'🛠' },
+  /* ── NAV ICONS (SVG) ───────────────────────────────────────── */
+  const IC = {
+    overview:      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>,
+    bookings:      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>,
+    customers:     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
+    vehicles:      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M5 17H3a2 2 0 0 1-2-2v-4l3-6h14l3 6v4a2 2 0 0 1-2 2h-2"/><circle cx="7.5" cy="17" r="2.5"/><circle cx="16.5" cy="17" r="2.5"/></svg>,
+    pricing:       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>,
+    areas:         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>,
+    formSettings:  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>,
+    adminUsers:    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
+    settings:      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
+    logout:        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>,
+    bell:          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>,
+    extLink:       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>,
+  };
+
+  /* ── NAV SECTIONS ───────────────────────────────────────────── */
+  const navSections = [
+    { label:'MAIN', items:[
+      { id:'overview',      label:'Dashboard',     icon: IC.overview },
+      { id:'bookings',      label:'Bookings',      icon: IC.bookings, badge: stats.pending || null },
+      { id:'vehicles',      label:'Vehicles',      icon: IC.vehicles },
+      { id:'customers',     label:'Customers',     icon: IC.customers },
+    ]},
+    { label:'CONFIGURATION', items:[
+      { id:'pricing',       label:'Pricing',       icon: IC.pricing },
+      { id:'service-areas', label:'Service Areas', icon: IC.areas },
+      { id:'form-settings', label:'Form Settings', icon: IC.formSettings },
+    ]},
+    { label:'SYSTEM', items:[
+      { id:'admin-users',   label:'Admin Users',   icon: IC.adminUsers },
+      { id:'settings',      label:'Settings',      icon: IC.settings },
+    ]},
   ];
 
   function navigate_(p) { setPage(p); setNotifDot(false); }
@@ -217,7 +239,7 @@ export default function AdminDashboard() {
   /* ── RENDER SECTIONS ────────────────────────────────────────── */
   function renderPage() {
     switch(page) {
-      case 'overview':      return <Overview stats={stats} bookings={bookings} currency={currency} onNavigate={navigate_} onView={b => setModal({type:'booking', data:b})}/>;
+      case 'overview':      return <Overview stats={stats} bookings={bookings} vehicles={vehicles} customers={customers} currency={currency} onNavigate={navigate_} onView={b => setModal({type:'booking', data:b})}/>;
       case 'bookings':      return <BookingsSection bookings={bookings} search={searchQuery} onView={b => setModal({type:'booking', data:b})} onDelete={id => setModal({type:'confirm', action:()=>deleteBooking(id), msg:'Delete this booking?'})}/>;
       case 'customers':     return <CustomersSection customers={customers} onDelete={id => setModal({type:'confirm', action:()=>deleteCustomer(id), msg:'Remove this customer?'})}/>;
       case 'vehicles':      return <VehiclesSection vehicles={vehicles} onAdd={() => setModal({type:'vehicle', data:null})} onEdit={v => setModal({type:'vehicle', data:v})} onToggle={toggleVehicle} onDelete={id => setModal({type:'confirm', action:()=>deleteVehicle(id), msg:'Delete this vehicle?'})}/>;
@@ -242,17 +264,22 @@ export default function AdminDashboard() {
           <button className="sidebar-toggle" onClick={() => setSidebarOpen(v => !v)}>{sidebarOpen ? '◀' : '▶'}</button>
         </div>
         <nav className="sidebar-nav">
-          {navItems.map(item => (
-            <button key={item.id} className={`nav-item ${page === item.id ? 'active' : ''}`} onClick={() => navigate_(item.id)}>
-              <span className="nav-icon">{item.icon}</span>
-              {sidebarOpen && <span className="nav-label">{item.label}</span>}
-              {sidebarOpen && item.badge ? <span className="nav-badge">{item.badge}</span> : null}
-            </button>
+          {navSections.map(section => (
+            <div key={section.label} className="nav-section">
+              {sidebarOpen && <div className="nav-section-label">{section.label}</div>}
+              {section.items.map(item => (
+                <button key={item.id} className={`nav-item ${page === item.id ? 'active' : ''}`} onClick={() => navigate_(item.id)}>
+                  <span className="nav-icon">{item.icon}</span>
+                  {sidebarOpen && <span className="nav-label">{item.label}</span>}
+                  {sidebarOpen && item.badge ? <span className="nav-badge">{item.badge}</span> : null}
+                </button>
+              ))}
+            </div>
           ))}
         </nav>
         <div className="sidebar-footer">
-          <button className="nav-item" onClick={logout}>
-            <span className="nav-icon">🚪</span>
+          <button className="nav-item nav-item-logout" onClick={logout}>
+            <span className="nav-icon">{IC.logout}</span>
             {sidebarOpen && <span className="nav-label">Logout</span>}
           </button>
         </div>
@@ -266,10 +293,10 @@ export default function AdminDashboard() {
             <input className="search-input" placeholder="Search bookings, customers…" value={searchQuery} onChange={e => setSearchQuery(e.target.value)}/>
           </div>
           <div className="topbar-right">
-            <button className="icon-btn" onClick={() => { setNotifDot(false); navigate_('bookings'); }}>
-              🔔{notifDot && <span className="notif-dot"/>}
+            <button className="icon-btn" title="Notifications" onClick={() => { setNotifDot(false); navigate_('bookings'); }}>
+              {IC.bell}{notifDot && <span className="notif-dot"/>}
             </button>
-            <a href="/" target="_blank" className="icon-btn" title="View booking form">🔗</a>
+            <a href="/" target="_blank" className="icon-btn" title="Open booking form">{IC.extLink}</a>
             <div className="topbar-user">
               <div className="user-avatar">{(auth.name||'A')[0]}</div>
               <div>
@@ -306,50 +333,103 @@ export default function AdminDashboard() {
    SECTION COMPONENTS
 ══════════════════════════════════════════ */
 
-function Overview({ stats, bookings, currency, onNavigate, onView }) {
-  const recent = bookings.slice(0, 5);
+function Overview({ stats, bookings, vehicles, customers, currency, onNavigate, onView }) {
+  const recent   = bookings.slice(0, 5);
+  const today    = new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  const cancelled = bookings.filter(b => b.status === 'cancelled').length;
+  const activeVeh = vehicles.filter(v => v.enabled !== false).length;
+
+  const statCards = [
+    { label:'Total Bookings',  val: stats.total,     cls:'',      icon:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg>, sub: stats.total === 0 ? 'Awaiting first booking' : `${stats.completed} completed` },
+    { label:'Pending',         val: stats.pending,   cls:'amber', icon:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>, sub: stats.pending === 0 ? 'None pending' : 'Awaiting confirmation' },
+    { label:'Confirmed',       val: stats.confirmed, cls:'green', icon:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>, sub: stats.confirmed === 0 ? 'None confirmed' : 'Ready to dispatch' },
+    { label:'Cancelled',       val: cancelled,       cls:'red',   icon:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>, sub: 'Total cancelled' },
+    { label:'Active Vehicles', val: activeVeh,       cls:'blue',  icon:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M5 17H3a2 2 0 0 1-2-2v-4l3-6h14l3 6v4a2 2 0 0 1-2 2h-2"/><circle cx="7.5" cy="17" r="2.5"/><circle cx="16.5" cy="17" r="2.5"/></svg>, sub: `${vehicles.length} total in fleet` },
+    { label:'Total Customers', val: customers.length, cls:'',     icon:<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>, sub: customers.length === 0 ? 'No customers yet' : 'Registered clients' },
+  ];
+
   return (
     <div className="page active" id="page-overview">
-      <div className="page-head"><h1 className="page-title">Overview</h1></div>
+      <div className="overview-head">
+        <div>
+          <h1 className="page-title">Dashboard Overview</h1>
+          <p className="overview-date">{today}</p>
+        </div>
+      </div>
+
+      {/* Stats */}
       <div className="stats-grid">
-        {[
-          { label:'Total Bookings', val: stats.total,     icon:'📋', cls:'' },
-          { label:'Pending',        val: stats.pending,   icon:'⏳', cls:'amber' },
-          { label:'Confirmed',      val: stats.confirmed, icon:'✓',  cls:'green' },
-          { label:'Revenue',        val: `${currency} ${stats.revenue.toLocaleString()}`, icon:'💰', cls:'gold' },
-        ].map(s => (
+        {statCards.map(s => (
           <div key={s.label} className={`stat-card ${s.cls}`}>
             <div className="stat-icon">{s.icon}</div>
             <div className="stat-val">{s.val}</div>
             <div className="stat-label">{s.label}</div>
+            <div className="stat-sub">{s.sub}</div>
           </div>
         ))}
       </div>
-      <div className="panel" style={{marginTop:'1.5rem'}}>
-        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'1rem'}}>
-          <h3 className="panel-section-title" style={{margin:0}}>Recent Bookings</h3>
-          <button className="act-btn act-btn-view" onClick={() => onNavigate('bookings')}>View All</button>
+
+      {/* Revenue card */}
+      <div className="revenue-card">
+        <div className="revenue-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" width="22"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
         </div>
-        {recent.length === 0 ? (
-          <div className="empty-state"><p>No bookings yet. <a href="/" target="_blank" style={{color:'var(--gold)'}}>Open booking form →</a></p></div>
-        ) : (
-          <div className="table-wrap">
-            <table className="data-table"><thead><tr>
-              <th>Ref</th><th>Customer</th><th>Route</th><th>Date</th><th>Status</th><th>Action</th>
-            </tr></thead><tbody>
-              {recent.map(b => (
-                <tr key={b.id}>
-                  <td><span style={{fontFamily:'monospace',color:'var(--gold)',fontSize:'.82rem'}}>{b.id}</span></td>
-                  <td><div>{b.name}</div><div style={{fontSize:'.75rem',color:'var(--text-muted)'}}>{b.email}</div></td>
-                  <td style={{fontSize:'.82rem'}}>{b.pickup} → {b.dropoff}</td>
-                  <td style={{fontSize:'.82rem'}}>{fmtDate(b.date)}</td>
-                  <td>{statusBadge(b.status)}</td>
-                  <td><button className="act-btn act-btn-view" onClick={() => onView(b)}>View</button></td>
-                </tr>
-              ))}
-            </tbody></table>
+        <div>
+          <div className="revenue-val">{currency} {stats.revenue > 0 ? stats.revenue.toLocaleString() : '—'}</div>
+          <div className="revenue-label">TOTAL REVENUE</div>
+          <div className="revenue-sub">{stats.revenue === 0 ? 'Revenue tracked from paid bookings' : `From ${bookings.filter(b=>b.payment==='paid').length} paid bookings`}</div>
+        </div>
+      </div>
+
+      {/* Bottom panels */}
+      <div className="overview-panels">
+        <div className="panel overview-panel-main">
+          <div className="panel-head">
+            <h3 className="panel-section-title">Recent Bookings</h3>
+            <button className="act-btn act-btn-view" onClick={() => onNavigate('bookings')}>View all →</button>
           </div>
-        )}
+          {recent.length === 0 ? (
+            <div className="empty-state">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" width="36" style={{opacity:0.25,display:'block',margin:'0 auto 0.75rem'}}><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg>
+              <p>No bookings yet.<br/><a href="/" target="_blank" style={{color:'var(--gold)'}}>Open booking form →</a></p>
+            </div>
+          ) : (
+            <div className="table-wrap">
+              <table className="data-table"><thead><tr>
+                <th>Reference</th><th>Customer</th><th>Route</th><th>Date</th><th>Status</th><th></th>
+              </tr></thead><tbody>
+                {recent.map(b => (
+                  <tr key={b.id}>
+                    <td><span className="ref-code">{b.id}</span></td>
+                    <td><div className="td-name">{b.name}</div><div className="td-sub">{b.email}</div></td>
+                    <td><div className="td-route">{b.pickup} → {b.dropoff}</div></td>
+                    <td><span className="td-sub">{fmtDate(b.date)}</span></td>
+                    <td>{statusBadge(b.status)}</td>
+                    <td><button className="act-btn act-btn-view" onClick={() => onView(b)}>View</button></td>
+                  </tr>
+                ))}
+              </tbody></table>
+            </div>
+          )}
+        </div>
+
+        <div className="panel overview-panel-side">
+          <h3 className="panel-section-title">Quick Stats</h3>
+          <div className="quick-stats">
+            {[
+              ['Completion rate', stats.total > 0 ? `${Math.round((stats.completed/stats.total)*100)}%` : '0%'],
+              ['This week', bookings.filter(b=>{ const d=new Date(b.createdAt); const now=new Date(); return (now-d)<7*864e5; }).length],
+              ['Avg fare', stats.completed > 0 ? `${currency} ${Math.round(bookings.filter(b=>b.estimatedFare).reduce((s,b)=>s+(b.estimatedFare||0),0)/Math.max(bookings.filter(b=>b.estimatedFare).length,1))}` : '—'],
+              ['Round trips', bookings.filter(b=>b.tripType==='round-trip').length],
+              ['Airport transfers', bookings.filter(b=>(b.pickup||'').toLowerCase().includes('airport')||(b.dropoff||'').toLowerCase().includes('airport')).length],
+            ].map(([label, val]) => (
+              <div key={label} className="qs-row">
+                <span className="qs-label">{label}</span>
+                <span className="qs-val">{val}</span>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
