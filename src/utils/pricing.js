@@ -24,10 +24,9 @@ export function estimateRoute(pickup, dropoff) {
   return { dist, timeStr, type };
 }
 
-export function calculateFare(vehicleId, distanceKm, isRoundTrip) {
+export function calculateFare(vehicleId, distanceKm, isRoundTrip, vPricing = {}) {
   try {
-    const all = JSON.parse(localStorage.getItem('se_vehicle_pricing') || '{}');
-    const p   = all[vehicleId];
+    const p = vPricing[vehicleId];
     if (!p) return null;
     let fare = (parseFloat(p.basePrice) || 0) + distanceKm * (parseFloat(p.pricePerKm) || 0);
     fare = Math.max(fare, parseFloat(p.minPrice) || 0);
@@ -41,14 +40,11 @@ export function generateRef() {
   return 'SE-' + Array.from({ length: 8 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
 }
 
-export function resolveVehicleName(vehicleId) {
+export function resolveVehicleName(vehicleId, vehicles = []) {
   const staticNames = {
     'tesla-model-y':'Tesla Model Y', 'mercedes-s-class':'Mercedes S-Class', 'mercedes-v-class':'Mercedes V-Class',
   };
-  try {
-    const stored = JSON.parse(localStorage.getItem('se_vehicles') || '[]');
-    const match  = stored.find(v => v.id === vehicleId);
-    if (match) return match.name;
-  } catch(e) {}
+  const match = vehicles.find(v => v.id === vehicleId);
+  if (match) return match.name;
   return staticNames[vehicleId] || vehicleId;
 }

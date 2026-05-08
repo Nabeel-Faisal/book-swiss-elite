@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import '../styles/booking.css';
 import { DEMO_LOCATIONS, detectCountryFromText, COUNTRY_NAMES, ALLOWED_COUNTRIES, LOCATION_ICONS } from '../utils/locations';
 import { estimateRoute, calculateFare, generateRef, resolveVehicleName } from '../utils/pricing';
+import { getVehicles, getVehiclePricing, getFormSettings, saveBooking, upsertCustomer } from '../utils/db.js';
 
 const TODAY = (() => {
   const d = new Date();
@@ -126,36 +127,17 @@ export default function BookingForm() {
   const [submitted, setSubmitted]   = useState(false);
   const [bookingRef, setBookingRef] = useState('');
   const [formSettings, setFormSettings] = useState({});
-
-  const loadVehicles = useCallback(() => {
-    try {
-      const stored = localStorage.getItem('se_vehicles');
-      if (stored) {
-        const parsed = JSON.parse(stored).filter(v => v.enabled);
-        if (parsed.length) { setVehicles(parsed); return; }
-      }
-    } catch(e) {}
-    setVehicles([]);
-  }, []);
-
-  const loadSettings = useCallback(() => {
-    try {
-      const fs = JSON.parse(localStorage.getItem('se_form_settings') || '{}');
-      setFormSettings(fs);
-    } catch(e) {}
-  }, []);
+  const [vPricingData, setVPricingData] = useState({});
 
   useEffect(() => {
-    loadVehicles();
-    loadSettings();
-    const onStorage = e => {
-      if (['se_frontend_sync','se_vehicles','se_vehicle_pricing'].includes(e.key)) {
-        loadVehicles(); loadSettings();
-      }
-    };
-    window.addEventListener('storage', onStorage);
-    return () => window.removeEventListener('storage', onStorage);
-  }, [loadVehicles, loadSettings]);
+    Promise.all([getVehicles(), getVehiclePricing(), getFormSettings()])
+      .then(([vList, vp, fs]) => {
+        setVehicles(vList.filter(v => v.enabled !== false));
+        setVPricingData(vp);
+        setFormSettings(fs);
+      })
+      .catch(err => console.error('[BookingForm] load error:', err));
+  }, []);
 
   useEffect(() => {
     if (pickup && dropoff) {
@@ -216,53 +198,48 @@ export default function BookingForm() {
     if (!validateStep3()) return;
     setSubmitting(true);
 
-    setTimeout(() => {
-      const ref  = generateRef();
-      const fare = estimatedDist ? calculateFare(vehicle, estimatedDist, isRound) : null;
+    const ref  = generateRef();
+    const fare = estimatedDist ? calculateFare(vehicle, estimatedDist, isRound, vPricingData) : null;
+    const vehicleName = resolveVehicleName(vehicle, vehicles);
 
-      const booking = {
-        id: ref, name, email, phone, tripType,
-        pickup: pickup?.name, pickupSub: pickup?.sub, pickupCountry: pickup?.country,
-        dropoff: dropoff?.name, dropoffSub: dropoff?.sub, dropoffCountry: dropoff?.country,
-        date: pickupDate, time: pickupTime,
-        returnDate: returnDate || '', returnTime: returnTime || '',
-        vehicleId: vehicle, vehicle: resolveVehicleName(vehicle),
-        estimatedDistance: estimatedDist || null, estimatedFare: fare,
-        status:'pending', payment:'unpaid', notes, source:'website', createdAt: Date.now(),
-      };
+    const booking = {
+      id: ref, name, email, phone, tripType,
+      pickup: pickup?.name, pickupSub: pickup?.sub, pickupCountry: pickup?.country,
+      dropoff: dropoff?.name, dropoffSub: dropoff?.sub, dropoffCountry: dropoff?.country,
+      date: pickupDate, time: pickupTime,
+      returnDate: returnDate || '', returnTime: returnTime || '',
+      vehicleId: vehicle, vehicle: vehicleName,
+      estimatedDistance: estimatedDist || null, estimatedFare: fare,
+      status:'pending', payment:'unpaid', notes, source:'website',
+    };
 
-      const bookings = JSON.parse(localStorage.getItem('se_bookings') || '[]');
-      bookings.unshift(booking);
-      localStorage.setItem('se_bookings', JSON.stringify(bookings));
-
-      const customers = JSON.parse(localStorage.getItem('se_customers') || '[]');
-      const ci = customers.findIndex(c => c.email === email);
-      if (ci >= 0) { customers[ci].bookings = (customers[ci].bookings||0)+1; customers[ci].lastBooking = pickupDate; customers[ci].phone = phone; }
-      else customers.unshift({ id:'C-'+Date.now(), name, email, phone, bookings:1, lastBooking: pickupDate, createdAt: Date.now() });
-      localStorage.setItem('se_customers', JSON.stringify(customers));
-      localStorage.setItem('se_frontend_sync', JSON.stringify({ key:'se_bookings', ts: Date.now() }));
-
+    Promise.all([
+      saveBooking(booking),
+      upsertCustomer({ id:'C-'+Date.now(), name, email, phone, lastBooking: pickupDate }),
+    ]).then(() => {
       fetch('/api/send-email', {
         method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({ ref, name, email, phone, tripType,
           pickup: pickup?.name, dropoff: dropoff?.name,
           date: pickupDate, time: pickupTime, returnDate, returnTime,
-          vehicle: resolveVehicleName(vehicle), estimatedDistance: estimatedDist, estimatedFare: fare, notes }),
+          vehicle: vehicleName, estimatedDistance: estimatedDist, estimatedFare: fare, notes }),
       }).catch(err => console.error('[Email]', err));
+    }).catch(err => console.error('[DB save]', err));
 
-      setBookingRef(ref);
-      setSubmitting(false);
-      setSubmitted(true);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }, 1200);
+    setBookingRef(ref);
+    setSubmitting(false);
+    setSubmitted(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   const staticVehicles = [
     { id:'tesla-model-y',    name:'Tesla Model Y',    image:'/assets/tesla-model-y.jpg',    category:'Executive Electric SUV', passengers:4, luggage:3, badge:'Electric', badgeType:'green',  features:['Zero Emissions','Premium Interior','Autopilot'] },
-    { id:'mercedes-s-class', name:'Mercedes S-Class', image:'/assets/mercedes-s-class.jpg', category:'Ultra-Luxury Sedan',     passengers:3, luggage:2, badge:'Flagship', badgeType:'gold',   features:['Maybach-Level Comfort','Massage Seats','Executive Class'] },
+    { id:'mercedes-s-class', name:'Mercedes S-Class', image:'/assets/mercedes-s-class.jpg', category:'Ultra-Luxury Sedan',     passengers:3, luggage:2, badge:'Flagship', badgeType:'gold',   features:['Massage Seats','Maybach Comfort','Executive Class'] },
     { id:'mercedes-v-class', name:'Mercedes V-Class', image:'/assets/mercedes-v-class.jpg', category:'Luxury MPV',             passengers:7, luggage:6, badge:'Group',    badgeType:'silver', features:['Spacious Interior','Business Conference','Group Transfers'] },
   ];
-  const displayVehicles = vehicles.length ? vehicles : staticVehicles;
+  const displayVehicles = vehicles.length
+    ? vehicles.map(v => ({ ...v, image: v.image || `/assets/${v.id}.jpg` }))
+    : staticVehicles;
 
   function stepClass(s) {
     if (s < step) return 'step-item completed';
@@ -425,7 +402,7 @@ export default function BookingForm() {
               </div>
               <div className="vehicles-grid">
                 {displayVehicles.map(v => {
-                  const fare = estimatedDist ? calculateFare(v.id, estimatedDist, isRound) : null;
+                  const fare = estimatedDist ? calculateFare(v.id, estimatedDist, isRound, vPricingData) : null;
                   return (
                     <div key={v.id} className={`vehicle-card ${vehicle === v.id ? 'selected' : ''}`}
                       role="radio" aria-checked={vehicle === v.id} tabIndex={0}

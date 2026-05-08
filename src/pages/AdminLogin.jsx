@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-
-const ADMIN_EMAIL = 'admin@swisselite.com';
-const ADMIN_PASS  = 'Admin@2026';
+import { loginAdmin } from '../utils/db.js';
 
 export default function AdminLogin() {
   const navigate = useNavigate();
@@ -29,9 +27,9 @@ export default function AdminLogin() {
     if (Object.keys(errs).length) { setErrors(errs); return; }
     setErrors({}); setAuthErr(''); setLoading(true);
 
-    setTimeout(() => {
-      if (email === ADMIN_EMAIL && password === ADMIN_PASS) {
-        const session = { loggedIn:true, email, name:'Admin', role:'superadmin', token:'se_'+Date.now() };
+    loginAdmin(email, password).then(admin => {
+      if (admin) {
+        const session = { loggedIn:true, email, name: admin.name, role: admin.role, token:'se_'+Date.now() };
         localStorage.setItem('se_auth', JSON.stringify(session));
         if (remember) localStorage.setItem('se_remember', '1');
         navigate('/admin/dashboard', { replace: true });
@@ -39,7 +37,10 @@ export default function AdminLogin() {
         setAuthErr('Invalid email or password.');
         setLoading(false);
       }
-    }, 900);
+    }).catch(() => {
+      setAuthErr('Connection error. Please try again.');
+      setLoading(false);
+    });
   }
 
   return (
@@ -110,9 +111,7 @@ export default function AdminLogin() {
             <p className="err-msg" style={{textAlign:'center',marginTop:'.75rem'}}>{authErr}</p>
           </form>
           <div className="hint">
-            <strong>Demo credentials</strong><br/>
-            Email: admin@swisselite.com<br/>
-            Password: Admin@2026
+            Use your admin email and password to sign in.
           </div>
         </div>
       </div>

@@ -1,91 +1,234 @@
-export const KEYS = {
-  vehicles:       'se_vehicles',
-  bookings:       'se_bookings',
-  customers:      'se_customers',
-  settings:       'se_settings',
-  formSettings:   'se_form_settings',
-  admins:         'se_admins',
-  areas:          'se_service_areas',
-  pricing:        'se_pricing',
-  vehiclePricing: 'se_vehicle_pricing',
-  auth:           'se_auth',
-  dataVersion:    'se_data_version',
-};
+import { supabase } from './supabase.js';
 
-const DATA_VERSION = '4';
+/* ── Data mappers ───────────────────────────────────────── */
+function mapVehicle(r) {
+  return {
+    id: r.id, name: r.name, category: r.category,
+    passengers: r.passengers, luggage: r.luggage,
+    badge: r.badge, badgeType: r.badge_type,
+    features: Array.isArray(r.features) ? r.features : [],
+    description: r.description, image: r.image,
+    enabled: r.enabled, order: r.sort_order,
+  };
+}
 
-export const DB = {
-  get:  (k)    => { try { return JSON.parse(localStorage.getItem(k)); } catch(e) { return null; } },
-  set:  (k, v) => { localStorage.setItem(k, JSON.stringify(v)); syncFrontend(k); },
-  del:  (k)    => localStorage.removeItem(k),
+function mapBooking(r) {
+  return {
+    id: r.id, name: r.name, email: r.email, phone: r.phone,
+    tripType: r.trip_type,
+    pickup: r.pickup, pickupSub: r.pickup_sub, pickupCountry: r.pickup_country,
+    dropoff: r.dropoff, dropoffSub: r.dropoff_sub, dropoffCountry: r.dropoff_country,
+    date: r.date, time: r.time, returnDate: r.return_date, returnTime: r.return_time,
+    vehicleId: r.vehicle_id, vehicle: r.vehicle,
+    estimatedDistance: r.estimated_distance, estimatedFare: r.estimated_fare,
+    status: r.status, payment: r.payment, notes: r.notes, source: r.source,
+    createdAt: new Date(r.created_at).getTime(),
+  };
+}
 
-  getVehicles:      () => DB.get(KEYS.vehicles)       || [],
-  getBookings:      () => DB.get(KEYS.bookings)       || [],
-  getCustomers:     () => DB.get(KEYS.customers)      || [],
-  getAdmins:        () => DB.get(KEYS.admins)         || [],
-  getAreas:         () => DB.get(KEYS.areas)          || [],
-  getFormSettings:  () => DB.get(KEYS.formSettings)   || {},
-  getSettings:      () => DB.get(KEYS.settings)       || {},
-  getPricing:       () => DB.get(KEYS.pricing)        || {},
-  getVehiclePricing:() => DB.get(KEYS.vehiclePricing) || {},
-};
+function mapCustomer(r) {
+  return {
+    id: r.id, name: r.name, email: r.email, phone: r.phone,
+    bookings: r.bookings, lastBooking: r.last_booking,
+    createdAt: new Date(r.created_at).getTime(),
+  };
+}
 
-function syncFrontend(key) {
-  if ([KEYS.vehicles, KEYS.formSettings, KEYS.areas, KEYS.vehiclePricing].includes(key)) {
-    localStorage.setItem('se_frontend_sync', JSON.stringify({ key, ts: Date.now() }));
+function mapPricing(r) {
+  if (!r) return {};
+  return { currency: r.currency, min: r.min, perkm: r.perkm, airport: r.airport, night: r.night, weekend: r.weekend };
+}
+
+function mapFormSettings(r) {
+  if (!r) return {};
+  return { title1: r.title1, title2: r.title2, title3: r.title3, btn1Text: r.btn1_text, btn2Text: r.btn2_text, btnSubmitText: r.btn_submit_text };
+}
+
+function mapSettings(r) {
+  if (!r) return {};
+  return { company: r.company, phone: r.phone, email: r.email, address: r.address, website: r.website, currency: r.currency };
+}
+
+/* ── Vehicles ────────────────────────────────────────────── */
+export async function getVehicles() {
+  const { data, error } = await supabase.from('vehicles').select('*').order('sort_order');
+  if (error) throw error;
+  return data.map(mapVehicle);
+}
+
+export async function saveVehicle(v) {
+  const row = {
+    id: v.id || ('v' + Date.now()),
+    name: v.name, category: v.category || '',
+    passengers: v.passengers || 4, luggage: v.luggage || 2,
+    badge: v.badge || '', badge_type: v.badgeType || 'green',
+    features: Array.isArray(v.features) ? v.features : [],
+    description: v.description || '', image: v.image || '',
+    enabled: v.enabled !== false,
+    sort_order: v.order || 0,
+  };
+  const { error } = await supabase.from('vehicles').upsert(row, { onConflict: 'id' });
+  if (error) throw error;
+  return row.id;
+}
+
+export async function deleteVehicle(id) {
+  const { error } = await supabase.from('vehicles').delete().eq('id', id);
+  if (error) throw error;
+}
+
+export async function toggleVehicle(id, enabled) {
+  const { error } = await supabase.from('vehicles').update({ enabled }).eq('id', id);
+  if (error) throw error;
+}
+
+/* ── Bookings ────────────────────────────────────────────── */
+export async function getBookings() {
+  const { data, error } = await supabase.from('bookings').select('*').order('created_at', { ascending: false });
+  if (error) throw error;
+  return data.map(mapBooking);
+}
+
+export async function saveBooking(b) {
+  const row = {
+    id: b.id, name: b.name, email: b.email, phone: b.phone || null,
+    trip_type: b.tripType || 'one-way',
+    pickup: b.pickup || null, pickup_sub: b.pickupSub || null, pickup_country: b.pickupCountry || null,
+    dropoff: b.dropoff || null, dropoff_sub: b.dropoffSub || null, dropoff_country: b.dropoffCountry || null,
+    date: b.date || null, time: b.time || null,
+    return_date: b.returnDate || null, return_time: b.returnTime || null,
+    vehicle_id: b.vehicleId || null, vehicle: b.vehicle || null,
+    estimated_distance: b.estimatedDistance || null, estimated_fare: b.estimatedFare || null,
+    status: b.status || 'pending', payment: b.payment || 'unpaid',
+    notes: b.notes || null, source: b.source || 'website',
+  };
+  const { error } = await supabase.from('bookings').upsert(row, { onConflict: 'id' });
+  if (error) throw error;
+}
+
+export async function updateBookingStatus(id, status) {
+  const { error } = await supabase.from('bookings').update({ status }).eq('id', id);
+  if (error) throw error;
+}
+
+export async function deleteBooking(id) {
+  const { error } = await supabase.from('bookings').delete().eq('id', id);
+  if (error) throw error;
+}
+
+/* ── Customers ───────────────────────────────────────────── */
+export async function getCustomers() {
+  const { data, error } = await supabase.from('customers').select('*').order('created_at', { ascending: false });
+  if (error) throw error;
+  return data.map(mapCustomer);
+}
+
+export async function upsertCustomer(c) {
+  const { data: existing } = await supabase.from('customers').select('id,bookings').eq('email', c.email).maybeSingle();
+  if (existing) {
+    await supabase.from('customers').update({ name: c.name, phone: c.phone, bookings: (existing.bookings || 0) + 1, last_booking: c.lastBooking }).eq('id', existing.id);
+  } else {
+    await supabase.from('customers').insert({ id: c.id, name: c.name, email: c.email, phone: c.phone, bookings: 1, last_booking: c.lastBooking });
   }
 }
 
-export function initData() {
-  if (localStorage.getItem(KEYS.dataVersion) !== DATA_VERSION) {
-    localStorage.removeItem(KEYS.bookings);
-    localStorage.removeItem(KEYS.customers);
-    localStorage.setItem(KEYS.dataVersion, DATA_VERSION);
-  }
+export async function deleteCustomer(id) {
+  const { error } = await supabase.from('customers').delete().eq('id', id);
+  if (error) throw error;
+}
 
-  if (!localStorage.getItem(KEYS.vehicles)) {
-    DB.set(KEYS.vehicles, [
-      { id:'v1', name:'Tesla Model Y',    image:'/assets/tesla-model-y.jpg',    category:'Executive Electric SUV', passengers:4, luggage:3, badge:'Electric', badgeType:'green',  features:['Zero Emissions','Premium Interior','Autopilot'],           description:'Cutting-edge electric SUV.', enabled:true, order:1 },
-      { id:'v2', name:'Mercedes S-Class', image:'/assets/mercedes-s-class.jpg', category:'Ultra-Luxury Sedan',     passengers:3, luggage:2, badge:'Flagship', badgeType:'gold',   features:['Massage Seats','Maybach Comfort','Executive Class'],        description:'The pinnacle of luxury travel.', enabled:true, order:2 },
-      { id:'v3', name:'Mercedes V-Class', image:'/assets/mercedes-v-class.jpg', category:'Luxury MPV',             passengers:7, luggage:6, badge:'Group',    badgeType:'silver', features:['Spacious Interior','Business Conference','Group Transfers'], description:'Perfect for groups.', enabled:true, order:3 },
-    ]);
-  }
-  if (!localStorage.getItem(KEYS.admins)) {
-    DB.set(KEYS.admins, [
-      { id:'A-001', name:'Admin', email:'admin@swisselite.com', role:'superadmin', lastLogin: new Date().toLocaleDateString(), status:'active' },
-    ]);
-  }
-  if (!localStorage.getItem(KEYS.areas)) {
-    DB.set(KEYS.areas, [
-      { code:'CH', name:'Switzerland', flag:'🇨🇭', enabled:true, cities:'Geneva, Zurich, Basel, Bern, Lausanne, Zermatt, St. Moritz, Verbier' },
-      { code:'FR', name:'France',      flag:'🇫🇷', enabled:true, cities:'Paris, Lyon, Nice, Courchevel, Chamonix, Val d\'Isère, Cannes' },
-      { code:'IT', name:'Italy',       flag:'🇮🇹', enabled:true, cities:'Milan, Rome, Venice, Florence, Lake Como, Cortina d\'Ampezzo' },
-    ]);
-  }
-  if (!localStorage.getItem(KEYS.formSettings)) {
-    DB.set(KEYS.formSettings, {
-      roundTripEnabled:true, vehiclesEnabled:true,
-      btn1Text:'Continue to Vehicles', btn2Text:'Continue to Order', btnSubmitText:'Book Your Transfer',
-      title1:'Ride Details', title2:'Choose Your Vehicle', title3:'Place Your Order',
-    });
-  }
-  if (!localStorage.getItem(KEYS.settings)) {
-    DB.set(KEYS.settings, {
-      company:'Swiss Elite Chauffeur', phone:'+41 22 000 0000', email:'info@swisselitetransfers.com',
-      address:'Geneva, Switzerland', website:'book.swisselitetransfers.com', currency:'CHF',
-    });
-  }
-  if (!localStorage.getItem(KEYS.pricing)) {
-    DB.set(KEYS.pricing, { currency:'CHF', min:80, perkm:2.5, airport:25, night:20, weekend:15 });
-  }
-  if (!localStorage.getItem(KEYS.vehiclePricing)) {
-    DB.set(KEYS.vehiclePricing, {
-      v1: { basePrice:80,  pricePerKm:2.0, minPrice:80  },
-      v2: { basePrice:120, pricePerKm:3.0, minPrice:120 },
-      v3: { basePrice:100, pricePerKm:2.5, minPrice:100 },
-      'tesla-model-y':    { basePrice:80,  pricePerKm:2.0, minPrice:80  },
-      'mercedes-s-class': { basePrice:120, pricePerKm:3.0, minPrice:120 },
-      'mercedes-v-class': { basePrice:100, pricePerKm:2.5, minPrice:100 },
-    });
-  }
+/* ── Vehicle Pricing ─────────────────────────────────────── */
+export async function getVehiclePricing() {
+  const { data, error } = await supabase.from('vehicle_pricing').select('*');
+  if (error) throw error;
+  const result = {};
+  for (const r of data) result[r.vehicle_id] = { basePrice: r.base_price, pricePerKm: r.price_per_km, minPrice: r.min_price };
+  return result;
+}
+
+export async function saveVehiclePricing(vehicleId, p) {
+  const { error } = await supabase.from('vehicle_pricing').upsert(
+    { vehicle_id: vehicleId, base_price: p.basePrice, price_per_km: p.pricePerKm, min_price: p.minPrice },
+    { onConflict: 'vehicle_id' }
+  );
+  if (error) throw error;
+}
+
+/* ── Pricing Settings ────────────────────────────────────── */
+export async function getPricing() {
+  const { data } = await supabase.from('pricing_settings').select('*').eq('id', 1).maybeSingle();
+  return mapPricing(data);
+}
+
+export async function savePricing(p) {
+  const { error } = await supabase.from('pricing_settings').upsert(
+    { id: 1, currency: p.currency || 'CHF', min: p.min || 0, perkm: p.perkm || 0, airport: p.airport || 0, night: p.night || 0, weekend: p.weekend || 0 },
+    { onConflict: 'id' }
+  );
+  if (error) throw error;
+}
+
+/* ── Service Areas ───────────────────────────────────────── */
+export async function getAreas() {
+  const { data, error } = await supabase.from('service_areas').select('*').order('code');
+  if (error) throw error;
+  return data;
+}
+
+export async function toggleArea(code, enabled) {
+  const { error } = await supabase.from('service_areas').update({ enabled }).eq('code', code);
+  if (error) throw error;
+}
+
+/* ── Form Settings ───────────────────────────────────────── */
+export async function getFormSettings() {
+  const { data } = await supabase.from('form_settings').select('*').eq('id', 1).maybeSingle();
+  return mapFormSettings(data);
+}
+
+export async function saveFormSettings(fs) {
+  const { error } = await supabase.from('form_settings').upsert(
+    { id: 1, title1: fs.title1, title2: fs.title2, title3: fs.title3, btn1_text: fs.btn1Text, btn2_text: fs.btn2Text, btn_submit_text: fs.btnSubmitText },
+    { onConflict: 'id' }
+  );
+  if (error) throw error;
+}
+
+/* ── App Settings ────────────────────────────────────────── */
+export async function getSettings() {
+  const { data } = await supabase.from('app_settings').select('*').eq('id', 1).maybeSingle();
+  return mapSettings(data);
+}
+
+export async function saveSettings(s) {
+  const { error } = await supabase.from('app_settings').upsert(
+    { id: 1, company: s.company || '', phone: s.phone || '', email: s.email || '', address: s.address || '', website: s.website || '', currency: s.currency || 'CHF' },
+    { onConflict: 'id' }
+  );
+  if (error) throw error;
+}
+
+/* ── Admin Users ─────────────────────────────────────────── */
+export async function getAdmins() {
+  const { data, error } = await supabase.from('admin_users').select('*');
+  if (error) throw error;
+  return data;
+}
+
+export async function loginAdmin(email, password) {
+  const { data } = await supabase.from('admin_users').select('*').eq('email', email).eq('status', 'active').maybeSingle();
+  if (!data || data.password !== password) return null;
+  return data;
+}
+
+export async function saveAdminUser(u) {
+  const row = { id: u.id || ('A-' + Date.now()), name: u.name, email: u.email, password: u.password || '', role: u.role || 'admin', status: u.status || 'active' };
+  const { error } = await supabase.from('admin_users').upsert(row, { onConflict: 'id' });
+  if (error) throw error;
+  return row;
+}
+
+export async function deleteAdmin(id) {
+  const { error } = await supabase.from('admin_users').delete().eq('id', id);
+  if (error) throw error;
 }

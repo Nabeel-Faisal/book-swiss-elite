@@ -1,6 +1,16 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { DB, KEYS, initData } from '../utils/db';
+import {
+  getVehicles, saveVehicle as sbSaveVehicle, deleteVehicle as sbDeleteVehicle, toggleVehicle as sbToggleVehicle,
+  getBookings, saveBooking, updateBookingStatus as sbUpdateStatus, deleteBooking as sbDeleteBooking,
+  getCustomers, deleteCustomer as sbDeleteCustomer,
+  getVehiclePricing, saveVehiclePricing as sbSaveVehiclePricing,
+  getPricing, savePricing as sbSavePricing,
+  getAreas, toggleArea as sbToggleArea,
+  getFormSettings, saveFormSettings as sbSaveFormSettings,
+  getSettings, saveSettings as sbSaveSettings,
+  getAdmins, saveAdminUser as sbSaveAdmin, deleteAdmin as sbDeleteAdmin,
+} from '../utils/db.js';
 import '../styles/admin.css';
 
 /* ── Helpers ─────────────────────────────────────────────────── */
@@ -37,34 +47,31 @@ export default function AdminDashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [notifDot, setNotifDot] = useState(false);
+  const [loadingData, setLoadingData] = useState(true);
 
   /* Auth */
   const auth = (() => { try { return JSON.parse(localStorage.getItem('se_auth')||'{}'); } catch(e){ return {}; } })();
 
   useEffect(() => {
     if (!auth.loggedIn) { navigate('/admin', { replace:true }); return; }
-    initData();
     loadAll();
-    const onStorage = e => {
-      if (['se_bookings','se_frontend_sync','se_vehicles'].includes(e.key)) {
-        loadAll();
-        setNotifDot(true);
-      }
-    };
-    window.addEventListener('storage', onStorage);
-    return () => window.removeEventListener('storage', onStorage);
   }, []);
 
-  const loadAll = useCallback(() => {
-    setVehicles(DB.getVehicles());
-    setBookings(DB.getBookings());
-    setCustomers(DB.getCustomers());
-    setAreas(DB.getAreas());
-    setPricing(DB.getPricing());
-    setVPricing(DB.getVehiclePricing());
-    setSettings(DB.getSettings());
-    setFormSettings(DB.getFormSettings());
-    setAdmins(DB.getAdmins());
+  const loadAll = useCallback(async () => {
+    setLoadingData(true);
+    try {
+      const [v, b, c, a, p, vp, s, fs, adm] = await Promise.all([
+        getVehicles(), getBookings(), getCustomers(), getAreas(),
+        getPricing(), getVehiclePricing(), getSettings(), getFormSettings(), getAdmins(),
+      ]);
+      setVehicles(v); setBookings(b); setCustomers(c); setAreas(a);
+      setPricing(p); setVPricing(vp); setSettings(s); setFormSettings(fs); setAdmins(adm);
+    } catch(err) {
+      console.error('DB load error:', err);
+      addToast('Failed to load data from database.', 'error');
+    } finally {
+      setLoadingData(false);
+    }
   }, []);
 
   function addToast(msg, type='success') {
@@ -78,114 +85,114 @@ export default function AdminDashboard() {
     navigate('/admin', { replace: true });
   }
 
-  /* ── VEHICLES CRUD ──────────────────────────────────────────── */
-  function saveVehicle(vData) {
-    const list = DB.getVehicles();
-    const id = vData.id;
-    if (id && list.find(v => v.id === id)) {
-      const idx = list.findIndex(v => v.id === id);
-      list[idx] = { ...list[idx], ...vData };
-    } else {
-      vData.id = vData.id || 'v'+Date.now();
-      vData.enabled = true;
-      vData.order   = list.length + 1;
-      list.push(vData);
-    }
-    DB.set(KEYS.vehicles, list);
-    setVehicles([...list]);
-    addToast(`Vehicle "${vData.name}" ${id ? 'updated' : 'added'} and synced to booking form.`);
+  /* ── VEHICLES ───────────────────────────────────────────────── */
+  async function saveVehicle(vData) {
+    try {
+      if (!vData.id) { vData.id = 'v' + Date.now(); vData.enabled = true; }
+      await sbSaveVehicle(vData);
+      setVehicles(await getVehicles());
+      addToast(`Vehicle "${vData.name}" saved.`);
+    } catch(e) { addToast('Failed to save vehicle.', 'error'); }
   }
-  function toggleVehicle(id) {
-    const list = DB.getVehicles();
-    const idx  = list.findIndex(v => v.id === id);
-    if (idx === -1) return;
-    list[idx].enabled = !list[idx].enabled;
-    DB.set(KEYS.vehicles, list);
-    setVehicles([...list]);
-    addToast(`Vehicle ${list[idx].enabled ? 'enabled' : 'disabled'} and synced.`);
+  async function toggleVehicle(id) {
+    const v = vehicles.find(x => x.id === id);
+    if (!v) return;
+    try {
+      await sbToggleVehicle(id, !v.enabled);
+      setVehicles(await getVehicles());
+      addToast(`Vehicle ${!v.enabled ? 'enabled' : 'disabled'}.`);
+    } catch(e) { addToast('Failed to update vehicle.', 'error'); }
   }
-  function deleteVehicle(id) {
-    const list = DB.getVehicles().filter(v => v.id !== id);
-    DB.set(KEYS.vehicles, list);
-    setVehicles([...list]);
-    addToast('Vehicle deleted.', 'error');
+  async function deleteVehicle(id) {
+    try {
+      await sbDeleteVehicle(id);
+      setVehicles(await getVehicles());
+      addToast('Vehicle deleted.', 'error');
+    } catch(e) { addToast('Failed to delete vehicle.', 'error'); }
   }
 
   /* ── BOOKINGS ───────────────────────────────────────────────── */
-  function updateBookingStatus(id, status) {
-    const list = DB.getBookings();
-    const idx  = list.findIndex(b => b.id === id);
-    if (idx === -1) return;
-    list[idx].status = status;
-    DB.set(KEYS.bookings, list);
-    setBookings([...list]);
-    addToast(`Booking status updated to ${cap(status)}.`);
+  async function updateBookingStatus(id, status) {
+    try {
+      await sbUpdateStatus(id, status);
+      setBookings(b => b.map(x => x.id === id ? { ...x, status } : x));
+      addToast(`Status updated to ${cap(status)}.`);
+    } catch(e) { addToast('Failed to update status.', 'error'); }
   }
-  function deleteBooking(id) {
-    const list = DB.getBookings().filter(b => b.id !== id);
-    DB.set(KEYS.bookings, list);
-    setBookings([...list]);
-    addToast('Booking deleted.', 'error');
+  async function deleteBooking(id) {
+    try {
+      await sbDeleteBooking(id);
+      setBookings(b => b.filter(x => x.id !== id));
+      addToast('Booking deleted.', 'error');
+    } catch(e) { addToast('Failed to delete booking.', 'error'); }
   }
 
   /* ── CUSTOMERS ──────────────────────────────────────────────── */
-  function deleteCustomer(id) {
-    const list = DB.getCustomers().filter(c => c.id !== id);
-    DB.set(KEYS.customers, list);
-    setCustomers([...list]);
-    addToast('Customer removed.', 'error');
+  async function deleteCustomer(id) {
+    try {
+      await sbDeleteCustomer(id);
+      setCustomers(c => c.filter(x => x.id !== id));
+      addToast('Customer removed.', 'error');
+    } catch(e) { addToast('Failed to remove customer.', 'error'); }
   }
 
   /* ── PRICING ────────────────────────────────────────────────── */
-  function savePricing(p) {
-    DB.set(KEYS.pricing, p);
-    setPricing({ ...p });
-    addToast('Pricing settings saved.');
+  async function savePricing(p) {
+    try {
+      await sbSavePricing(p);
+      setPricing({ ...p });
+      addToast('Pricing settings saved.');
+    } catch(e) { addToast('Failed to save pricing.', 'error'); }
   }
-  function saveVehiclePricing(vehicleId, p) {
-    const all = DB.getVehiclePricing();
-    all[vehicleId] = p;
-    DB.set(KEYS.vehiclePricing, all);
-    setVPricing({ ...all });
-    addToast('Vehicle pricing saved and synced to booking form.');
+  async function saveVehiclePricing(vehicleId, p) {
+    try {
+      await sbSaveVehiclePricing(vehicleId, p);
+      setVPricing(vp => ({ ...vp, [vehicleId]: p }));
+      addToast('Vehicle pricing saved.');
+    } catch(e) { addToast('Failed to save pricing.', 'error'); }
   }
 
   /* ── SERVICE AREAS ──────────────────────────────────────────── */
-  function toggleArea(code, enabled) {
-    const list = DB.getAreas();
-    const idx  = list.findIndex(a => a.code === code);
-    if (idx !== -1) { list[idx].enabled = enabled; DB.set(KEYS.areas, list); setAreas([...list]); }
-    addToast(`${code} area ${enabled ? 'enabled' : 'disabled'}.`);
+  async function toggleArea(code, enabled) {
+    try {
+      await sbToggleArea(code, enabled);
+      setAreas(a => a.map(x => x.code === code ? { ...x, enabled } : x));
+      addToast(`${code} ${enabled ? 'enabled' : 'disabled'}.`);
+    } catch(e) { addToast('Failed to update area.', 'error'); }
   }
 
   /* ── FORM SETTINGS ──────────────────────────────────────────── */
-  function saveFormSettings(fs) {
-    DB.set(KEYS.formSettings, fs);
-    setFormSettings({ ...fs });
-    addToast('Form settings saved and synced.');
+  async function saveFormSettings(fs) {
+    try {
+      await sbSaveFormSettings(fs);
+      setFormSettings({ ...fs });
+      addToast('Form settings saved.');
+    } catch(e) { addToast('Failed to save form settings.', 'error'); }
   }
 
   /* ── GENERAL SETTINGS ───────────────────────────────────────── */
-  function saveSettings(s) {
-    DB.set(KEYS.settings, s);
-    setSettings({ ...s });
-    addToast('Settings saved.');
+  async function saveSettings(s) {
+    try {
+      await sbSaveSettings(s);
+      setSettings({ ...s });
+      addToast('Settings saved.');
+    } catch(e) { addToast('Failed to save settings.', 'error'); }
   }
 
   /* ── ADMIN USERS ────────────────────────────────────────────── */
-  function saveAdminUser(u) {
-    const list = DB.getAdmins();
-    if (u.id) { const idx = list.findIndex(a => a.id === u.id); if (idx !== -1) list[idx] = u; }
-    else { u.id = 'A-'+Date.now(); list.push(u); }
-    DB.set(KEYS.admins, list);
-    setAdmins([...list]);
-    addToast('Admin user saved.');
+  async function saveAdminUser(u) {
+    try {
+      const saved = await sbSaveAdmin(u);
+      setAdmins(await getAdmins());
+      addToast('Admin user saved.');
+    } catch(e) { addToast('Failed to save admin user.', 'error'); }
   }
-  function deleteAdmin(id) {
-    const list = DB.getAdmins().filter(a => a.id !== id);
-    DB.set(KEYS.admins, list);
-    setAdmins([...list]);
-    addToast('Admin user removed.', 'error');
+  async function deleteAdmin(id) {
+    try {
+      await sbDeleteAdmin(id);
+      setAdmins(a => a.filter(x => x.id !== id));
+      addToast('Admin user removed.', 'error');
+    } catch(e) { addToast('Failed to remove admin.', 'error'); }
   }
 
   /* ── STATS ──────────────────────────────────────────────────── */
@@ -251,6 +258,14 @@ export default function AdminDashboard() {
       default: return null;
     }
   }
+
+  if (loadingData) return (
+    <div style={{minHeight:'100vh',background:'#050505',display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',gap:'1.25rem'}}>
+      <div style={{fontSize:'1.2rem',fontWeight:700,letterSpacing:'.2em',color:'#f2efe8'}}>◆ SWISS <span style={{color:'#C9A84C'}}>ELITE</span></div>
+      <div style={{width:36,height:36,border:'2.5px solid rgba(201,168,76,0.2)',borderTopColor:'#C9A84C',borderRadius:'50%',animation:'spin .75s linear infinite'}}/>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+    </div>
+  );
 
   return (
     <div className="admin-layout">
