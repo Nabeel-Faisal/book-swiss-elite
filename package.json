@@ -2,10 +2,11 @@
   "name": "book-swiss-elite",
   "version": "1.0.0",
   "scripts": {
-    "dev":     "concurrently \"nodemon server.js\" \"vite --port 3000\"",
-    "build":   "vite build",
-    "start":   "node server.js",
-    "preview": "vite preview"
+    "dev":         "concurrently \"nodemon server.js\" \"vite --port 3000\"",
+    "build":       "vite build",
+    "postinstall": "vite build",
+    "start":       "node server.js",
+    "preview":     "vite preview"
   },
   "dependencies": {
     "cors":           "^2.8.5",
