@@ -21,9 +21,9 @@ const TIME_OPTIONS = (() => {
 
 /* ── Location Autocomplete Component ─────────────────────────── */
 function LocationAutocomplete({ placeholder, selected, onSelect, onClear, error, id }) {
-  const [query, setQuery]     = useState(selected?.name || '');
-  const [items, setItems]     = useState([]);
-  const [open, setOpen]       = useState(false);
+  const [query, setQuery]      = useState(selected?.name || '');
+  const [items, setItems]      = useState([]);
+  const [open, setOpen]        = useState(false);
   const [activeIdx, setActive] = useState(-1);
   const dropRef = useRef(null);
 
@@ -127,7 +127,6 @@ export default function BookingForm() {
   const [bookingRef, setBookingRef] = useState('');
   const [formSettings, setFormSettings] = useState({});
 
-  /* Load vehicles + settings from admin */
   const loadVehicles = useCallback(() => {
     try {
       const stored = localStorage.getItem('se_vehicles');
@@ -158,7 +157,6 @@ export default function BookingForm() {
     return () => window.removeEventListener('storage', onStorage);
   }, [loadVehicles, loadSettings]);
 
-  /* Recalculate route when pickup/dropoff change */
   useEffect(() => {
     if (pickup && dropoff) {
       const info = estimateRoute(pickup, dropoff);
@@ -174,7 +172,6 @@ export default function BookingForm() {
 
   function clearErr(field) { setErrors(e => { const n = {...e}; delete n[field]; return n; }); }
 
-  /* ── Step Validation ───────────────────────────────────────── */
   function validateStep1() {
     const errs = {};
     if (!pickup)  errs['pickup-location']  = 'Please select a pickup location.';
@@ -214,7 +211,6 @@ export default function BookingForm() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  /* ── Submit ────────────────────────────────────────────────── */
   function submit(e) {
     e.preventDefault();
     if (!validateStep3()) return;
@@ -235,7 +231,6 @@ export default function BookingForm() {
         status:'pending', payment:'unpaid', notes, source:'website', createdAt: Date.now(),
       };
 
-      /* Save to localStorage */
       const bookings = JSON.parse(localStorage.getItem('se_bookings') || '[]');
       bookings.unshift(booking);
       localStorage.setItem('se_bookings', JSON.stringify(bookings));
@@ -247,7 +242,6 @@ export default function BookingForm() {
       localStorage.setItem('se_customers', JSON.stringify(customers));
       localStorage.setItem('se_frontend_sync', JSON.stringify({ key:'se_bookings', ts: Date.now() }));
 
-      /* Send confirmation email */
       fetch('/api/send-email', {
         method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({ ref, name, email, phone, tripType,
@@ -263,7 +257,6 @@ export default function BookingForm() {
     }, 1200);
   }
 
-  /* ── Static vehicle fallback ──────────────────────────────── */
   const staticVehicles = [
     { id:'tesla-model-y',    name:'Tesla Model Y',    image:'/assets/tesla-model-y.jpg',    category:'Executive Electric SUV', passengers:4, luggage:3, badge:'Electric', badgeType:'green',  features:['Zero Emissions','Premium Interior','Autopilot'] },
     { id:'mercedes-s-class', name:'Mercedes S-Class', image:'/assets/mercedes-s-class.jpg', category:'Ultra-Luxury Sedan',     passengers:3, luggage:2, badge:'Flagship', badgeType:'gold',   features:['Maybach-Level Comfort','Massage Seats','Executive Class'] },
@@ -271,11 +264,10 @@ export default function BookingForm() {
   ];
   const displayVehicles = vehicles.length ? vehicles : staticVehicles;
 
-  /* ── Step nav progress ────────────────────────────────────── */
-  function stepNavClass(s) {
-    if (s < step) return 'step-nav-item completed';
-    if (s === step) return 'step-nav-item active';
-    return 'step-nav-item';
+  function stepClass(s) {
+    if (s < step) return 'step-item completed';
+    if (s === step) return 'step-item active';
+    return 'step-item';
   }
 
   if (submitted) return <SuccessScreen ref_={bookingRef} />;
@@ -283,63 +275,75 @@ export default function BookingForm() {
   return (
     <div className="booking-page">
       <div className="booking-container">
+
         {/* Brand */}
         <div className="brand-header">
           <div className="brand-logo">◆ SWISS <span>ELITE</span></div>
           <div className="brand-tagline">Luxury Chauffeur Transfers</div>
         </div>
 
-        <div className="form-wrap">
-          {/* Progress */}
-          <div className="progress-bar" role="navigation">
-            <div className={stepNavClass(1)} id="step-nav-1" onClick={() => step > 1 && goToStep(1)}>
-              <div className="step-num">1</div>
-              <div className="step-label">{formSettings.title1 || 'Ride Details'}</div>
-            </div>
-            <div className={`connector ${step >= 2 ? 'filled' : ''}`} id="connector-1-2"/>
-            <div className={stepNavClass(2)} id="step-nav-2" onClick={() => step > 2 && goToStep(2)}>
-              <div className="step-num">2</div>
-              <div className="step-label">{formSettings.title2 || 'Choose Vehicle'}</div>
-            </div>
-            <div className={`connector ${step >= 3 ? 'filled' : ''}`} id="connector-2-3"/>
-            <div className={stepNavClass(3)} id="step-nav-3">
-              <div className="step-num">3</div>
-              <div className="step-label">{formSettings.title3 || 'Place Order'}</div>
-            </div>
+        {/* Progress — outside the card */}
+        <div className="progress-steps">
+          <div className={stepClass(1)} onClick={() => step > 1 && goToStep(1)}>
+            <div className="step-circle"><span>{step > 1 ? '✓' : '1'}</span></div>
+            <div className="step-lbl">{formSettings.title1 || 'Ride Details'}</div>
           </div>
+          <div className={`step-line ${step >= 2 ? 'done' : ''}`}/>
+          <div className={stepClass(2)} onClick={() => step > 2 && goToStep(2)}>
+            <div className="step-circle"><span>{step > 2 ? '✓' : '2'}</span></div>
+            <div className="step-lbl">{formSettings.title2 || 'Choose Vehicle'}</div>
+          </div>
+          <div className={`step-line ${step >= 3 ? 'done' : ''}`}/>
+          <div className={stepClass(3)}>
+            <div className="step-circle"><span>3</span></div>
+            <div className="step-lbl">{formSettings.title3 || 'Place Order'}</div>
+          </div>
+        </div>
+
+        {/* Form card */}
+        <div className="form-card">
 
           {/* ── STEP 1 ── */}
           {step === 1 && (
-            <div className="step active" id="step-1">
+            <div className="form-step">
               <div className="step-header">
                 <h2 className="step-title">{formSettings.title1 || 'Ride Details'}</h2>
-                <p className="step-desc">Select your trip type and enter pickup & drop-off details</p>
+                <p className="step-desc">Configure your transfer preferences</p>
               </div>
 
-              {/* Trip type */}
-              <div className="field-group">
-                <div className="trip-type-grid">
-                  {[['one-way','One Way','→'],['round-trip','Round Trip','⇄']].map(([val,label,icon]) => (
-                    <button key={val} type="button" className={`trip-card ${tripType === val ? 'active' : ''}`}
+              {/* Trip Type */}
+              <div className="field-section">
+                <div className="section-label">TRIP TYPE</div>
+                <div className="trip-grid">
+                  {[
+                    ['one-way',    'One Way',    '→', 'Single destination transfer'],
+                    ['round-trip', 'Round Trip', '⇄', 'Return journey included'],
+                  ].map(([val, label, icon, desc]) => (
+                    <button key={val} type="button" className={`trip-btn ${tripType === val ? 'active' : ''}`}
                       onClick={() => { setTripType(val); if (val !== 'round-trip') { setReturnDate(''); setReturnTime(''); } }}>
-                      <span className="trip-card-icon">{icon}</span>
-                      <span className="trip-card-label">{label}</span>
+                      <span className="trip-btn-icon">{icon}</span>
+                      <span className="trip-btn-title">{label}</span>
+                      <span className="trip-btn-desc">{desc}</span>
                     </button>
                   ))}
                 </div>
               </div>
 
               {/* Locations */}
-              <div className="field-group two-col">
+              <div className="field-row">
                 <div className="field">
-                  <label className="field-label" htmlFor="pickup-location">Pickup Location</label>
+                  <label className="field-label" htmlFor="pickup-location">
+                    <span className="loc-dot loc-dot-a"/>Pickup Location
+                  </label>
                   <LocationAutocomplete id="pickup-location" placeholder="City, airport or address…" selected={pickup}
                     onSelect={v => { setPickup(v); clearErr('pickup-location'); }}
                     onClear={() => setPickup(null)} error={errors['pickup-location']}/>
                   {errors['pickup-location'] && <p className="field-error">{errors['pickup-location']}</p>}
                 </div>
                 <div className="field">
-                  <label className="field-label" htmlFor="dropoff-location">Drop-off Location</label>
+                  <label className="field-label" htmlFor="dropoff-location">
+                    <span className="loc-dot loc-dot-b"/>Drop-off Location
+                  </label>
                   <LocationAutocomplete id="dropoff-location" placeholder="City, airport or address…" selected={dropoff}
                     onSelect={v => { setDropoff(v); clearErr('dropoff-location'); }}
                     onClear={() => setDropoff(null)} error={errors['dropoff-location']}/>
@@ -347,17 +351,28 @@ export default function BookingForm() {
                 </div>
               </div>
 
-              {/* Route summary */}
+              {/* Route card */}
               {routeInfo && (
-                <div className="route-summary" id="route-summary">
-                  <div className="route-pill"><span className="route-icon">📍</span><span id="route-distance">~{routeInfo.dist} km</span></div>
-                  <div className="route-pill"><span className="route-icon">⏱</span><span id="route-duration">~{routeInfo.timeStr}</span></div>
-                  <div className="route-pill"><span className="route-icon">🚗</span><span id="route-type">{routeInfo.type}</span></div>
+                <div className="route-card">
+                  <div className="route-col">
+                    <span className="route-col-label">EST. DISTANCE</span>
+                    <span className="route-col-val">~{routeInfo.dist} km</span>
+                  </div>
+                  <div className="route-divider"/>
+                  <div className="route-col">
+                    <span className="route-col-label">EST. DURATION</span>
+                    <span className="route-col-val">~{routeInfo.timeStr}</span>
+                  </div>
+                  <div className="route-divider"/>
+                  <div className="route-col">
+                    <span className="route-col-label">TRANSFER TYPE</span>
+                    <span className="route-col-val gold">{routeInfo.type}</span>
+                  </div>
                 </div>
               )}
 
               {/* Dates */}
-              <div className="field-group two-col">
+              <div className="field-row">
                 <div className="field">
                   <label className="field-label" htmlFor="pickup-date">Pickup Date</label>
                   <input className={`input ${errors['pickup-date'] ? 'error' : ''}`} type="date" id="pickup-date"
@@ -374,9 +389,8 @@ export default function BookingForm() {
                 </div>
               </div>
 
-              {/* Return fields */}
               {isRound && (
-                <div className="field-group two-col" id="return-fields">
+                <div className="field-row">
                   <div className="field">
                     <label className="field-label" htmlFor="return-date">Return Date</label>
                     <input className={`input ${errors['return-date'] ? 'error' : ''}`} type="date" id="return-date"
@@ -394,10 +408,9 @@ export default function BookingForm() {
                 </div>
               )}
 
-              <div className="step-actions">
-                <button type="button" className="btn btn-primary" id="step1-next" onClick={() => goToStep(2)}>
-                  <span>{formSettings.btn1Text || 'Continue to Vehicles'}</span>
-                  <span className="btn-arrow">→</span>
+              <div className="step-footer">
+                <button type="button" className="btn-next" onClick={() => goToStep(2)}>
+                  {formSettings.btn1Text || 'Continue to Vehicles'} →
                 </button>
               </div>
             </div>
@@ -405,12 +418,12 @@ export default function BookingForm() {
 
           {/* ── STEP 2 ── */}
           {step === 2 && (
-            <div className="step active" id="step-2">
+            <div className="form-step">
               <div className="step-header">
                 <h2 className="step-title">{formSettings.title2 || 'Choose Your Vehicle'}</h2>
                 <p className="step-desc">Select your preferred vehicle for this transfer</p>
               </div>
-              <div className="vehicle-grid">
+              <div className="vehicles-grid">
                 {displayVehicles.map(v => {
                   const fare = estimatedDist ? calculateFare(v.id, estimatedDist, isRound) : null;
                   return (
@@ -418,52 +431,49 @@ export default function BookingForm() {
                       role="radio" aria-checked={vehicle === v.id} tabIndex={0}
                       onClick={() => { setVehicle(v.id); clearErr('vehicle'); }}
                       onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setVehicle(v.id); clearErr('vehicle'); } }}>
-                      <div className={`vehicle-badge ${v.badgeType === 'gold' ? 'badge-gold' : v.badgeType === 'silver' ? 'badge-silver' : ''}`}>{v.badge}</div>
-                      <div className="vehicle-image-wrap">
-                        <img src={v.image} alt={v.name} className="vehicle-img"
+                      <div className={`v-badge ${v.badgeType === 'gold' ? 'v-badge-gold' : v.badgeType === 'silver' ? 'v-badge-silver' : ''}`}>{v.badge}</div>
+                      <div className="v-img-wrap">
+                        <img src={v.image} alt={v.name} className="v-img"
                           onError={e => { e.target.src = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300'%3E%3Crect width='400' height='300' fill='%23111'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%23C8A45D' font-size='14' font-family='sans-serif'%3E${v.name}%3C/text%3E%3C/svg%3E`; }}/>
                       </div>
-                      <div className="vehicle-info">
-                        <h3 className="vehicle-name">{v.name}</h3>
-                        <p className="vehicle-class">{v.category}</p>
-                        <div className="vehicle-specs">
-                          <span className="spec">
+                      <div className="v-info">
+                        <h3 className="v-name">{v.name}</h3>
+                        <p className="v-category">{v.category}</p>
+                        <div className="v-specs">
+                          <span className="v-spec">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                             {v.passengers} Passengers
                           </span>
-                          <span className="spec">
+                          <span className="v-spec">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
                             {v.luggage} Luggage
                           </span>
                         </div>
-                        <ul className="vehicle-features">
+                        <ul className="v-features">
                           {(v.features||[]).map((f, i) => <li key={i}>{f}</li>)}
                         </ul>
                         {fare !== null && (
-                          <div className="vehicle-fare">
-                            <div className="fare-inner">
-                              <span className="fare-label">{isRound ? 'Round Trip' : 'One Way'} · ~{estimatedDist} km</span>
-                              <span className="fare-amount">CHF {fare.toLocaleString()}</span>
-                            </div>
+                          <div className="v-fare">
+                            <span className="v-fare-label">{isRound ? 'Round Trip' : 'One Way'} · ~{estimatedDist} km</span>
+                            <span className="v-fare-val">CHF {fare.toLocaleString()}</span>
                           </div>
                         )}
                       </div>
-                      <div className="vehicle-select-indicator">
-                        <span className="indicator-ring"/><span className="indicator-text">Selected</span>
-                      </div>
+                      {vehicle === v.id && (
+                        <div className="v-selected-bar">✓ Selected</div>
+                      )}
                     </div>
                   );
                 })}
               </div>
               {errors.vehicle && <p className="field-error" style={{textAlign:'center',marginTop:'1rem'}}>{errors.vehicle}</p>}
-              <div className="step-actions step-actions-split">
-                <button type="button" className="btn btn-ghost btn-prev" onClick={() => goToStep(1)}>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+              <div className="step-footer step-footer-split">
+                <button type="button" className="btn-back" onClick={() => goToStep(1)}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
                   Back
                 </button>
-                <button type="button" className="btn btn-primary" onClick={() => goToStep(3)}>
-                  <span>{formSettings.btn2Text || 'Continue to Order'}</span>
-                  <span className="btn-arrow">→</span>
+                <button type="button" className="btn-next" onClick={() => goToStep(3)}>
+                  {formSettings.btn2Text || 'Continue to Order'} →
                 </button>
               </div>
             </div>
@@ -471,25 +481,24 @@ export default function BookingForm() {
 
           {/* ── STEP 3 ── */}
           {step === 3 && (
-            <div className="step active" id="step-3">
+            <div className="form-step">
               <div className="step-header">
                 <h2 className="step-title">{formSettings.title3 || 'Place Your Order'}</h2>
                 <p className="step-desc">Enter your contact details to confirm the booking</p>
               </div>
 
-              {/* Summary */}
               <div className="order-summary">
-                <div className="summary-title">Booking Summary</div>
-                <div className="summary-grid">
-                  <div className="summary-item"><span className="summary-label">Route</span><span className="summary-value" id="summary-route">{pickup && dropoff ? `${pickup.name} → ${dropoff.name}` : '—'}</span></div>
-                  <div className="summary-item"><span className="summary-label">Date & Time</span><span className="summary-value">{pickupDate ? new Date(pickupDate+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : '—'} {pickupTime && '· '+pickupTime}</span></div>
-                  <div className="summary-item"><span className="summary-label">Vehicle</span><span className="summary-value">{vehicle ? resolveVehicleName(vehicle) : '—'}</span></div>
-                  <div className="summary-item"><span className="summary-label">Trip Type</span><span className="summary-value">{isRound ? 'Round Trip' : 'One Way'}</span></div>
+                <div className="order-summary-title">Booking Summary</div>
+                <div className="order-summary-grid">
+                  <div className="os-item"><span className="os-label">Route</span><span className="os-val">{pickup && dropoff ? `${pickup.name} → ${dropoff.name}` : '—'}</span></div>
+                  <div className="os-item"><span className="os-label">Date & Time</span><span className="os-val">{pickupDate ? new Date(pickupDate+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : '—'} {pickupTime && '· '+pickupTime}</span></div>
+                  <div className="os-item"><span className="os-label">Vehicle</span><span className="os-val">{vehicle ? resolveVehicleName(vehicle) : '—'}</span></div>
+                  <div className="os-item"><span className="os-label">Trip Type</span><span className="os-val">{isRound ? 'Round Trip' : 'One Way'}</span></div>
                 </div>
               </div>
 
               <form onSubmit={submit} noValidate>
-                <div className="field-group two-col">
+                <div className="field-row">
                   <div className="field">
                     <label className="field-label" htmlFor="full-name">Full Name</label>
                     <input className={`input ${errors['full-name'] ? 'error' : ''}`} id="full-name" type="text" placeholder="John Smith"
@@ -503,31 +512,27 @@ export default function BookingForm() {
                     {errors.email && <p className="field-error">{errors.email}</p>}
                   </div>
                 </div>
-                <div className="field-group">
-                  <div className="field">
-                    <label className="field-label" htmlFor="phone">Phone Number</label>
-                    <input className={`input ${errors.phone ? 'error' : ''}`} id="phone" type="tel" placeholder="+41 79 000 0000"
-                      value={phone} onChange={e => { setPhone(e.target.value); clearErr('phone'); }} autoComplete="tel"/>
-                    {errors.phone && <p className="field-error">{errors.phone}</p>}
-                  </div>
+                <div className="field" style={{marginBottom:'1.25rem'}}>
+                  <label className="field-label" htmlFor="phone">Phone Number</label>
+                  <input className={`input ${errors.phone ? 'error' : ''}`} id="phone" type="tel" placeholder="+41 79 000 0000"
+                    value={phone} onChange={e => { setPhone(e.target.value); clearErr('phone'); }} autoComplete="tel"/>
+                  {errors.phone && <p className="field-error">{errors.phone}</p>}
                 </div>
-                <div className="field-group">
-                  <div className="field">
-                    <label className="field-label" htmlFor="special-requests">Special Requests <span style={{color:'var(--text-muted)',fontWeight:400}}>(optional)</span></label>
-                    <textarea className="input textarea" id="special-requests" rows={3} placeholder="Any special requirements, flight number, etc."
-                      value={notes} onChange={e => setNotes(e.target.value)}/>
-                  </div>
+                <div className="field" style={{marginBottom:'2rem'}}>
+                  <label className="field-label" htmlFor="special-requests">Special Requests <span style={{color:'var(--text-muted)',fontWeight:400}}>(optional)</span></label>
+                  <textarea className="input textarea" id="special-requests" rows={3} placeholder="Any special requirements, flight number, etc."
+                    value={notes} onChange={e => setNotes(e.target.value)}/>
                 </div>
-                <div className="step-actions step-actions-split">
-                  <button type="button" className="btn btn-ghost btn-prev" onClick={() => goToStep(2)}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                <div className="step-footer step-footer-split">
+                  <button type="button" className="btn-back" onClick={() => goToStep(2)}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
                     Back
                   </button>
-                  <button type="submit" className="btn btn-primary btn-submit" id="submit-btn" disabled={submitting}>
+                  <button type="submit" className="btn-next" disabled={submitting}>
                     {submitting ? (
-                      <><span className="btn-loader"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="spin-icon"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg></span>Processing...</>
+                      <><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" style={{animation:'spin .8s linear infinite'}}><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Processing...</>
                     ) : (
-                      <><span className="btn-text">{formSettings.btnSubmitText || 'Book Your Transfer'}</span><span className="btn-arrow">→</span></>
+                      <>{formSettings.btnSubmitText || 'Book Your Transfer'} →</>
                     )}
                   </button>
                 </div>
@@ -549,21 +554,19 @@ function SuccessScreen({ ref_ }) {
           <div className="brand-logo">◆ SWISS <span>ELITE</span></div>
           <div className="brand-tagline">Luxury Chauffeur Transfers</div>
         </div>
-        <div className="form-wrap">
-          <div className="step active" id="step-success">
-            <div style={{textAlign:'center',padding:'2rem 0'}}>
-              <div style={{width:72,height:72,borderRadius:'50%',background:'rgba(74,222,128,0.12)',border:'1.5px solid rgba(74,222,128,0.35)',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 1.5rem',fontSize:'2rem'}}>✓</div>
-              <h2 style={{fontSize:'1.5rem',fontWeight:700,color:'var(--text-primary)',marginBottom:'.75rem'}}>Booking Confirmed!</h2>
-              <p style={{fontSize:'.9rem',color:'var(--text-muted)',maxWidth:400,margin:'0 auto 1.5rem',lineHeight:1.7}}>Your luxury transfer has been reserved. A confirmation email has been sent to your inbox.</p>
-              <div style={{display:'inline-block',background:'rgba(200,164,93,0.1)',border:'1px solid rgba(200,164,93,0.3)',borderRadius:12,padding:'1rem 2rem',marginBottom:'2rem'}}>
-                <div style={{fontSize:'.72rem',letterSpacing:'.2em',textTransform:'uppercase',color:'var(--text-muted)',marginBottom:'.3rem'}}>Booking Reference</div>
-                <div style={{fontSize:'1.4rem',fontWeight:700,color:'var(--gold)',letterSpacing:'.1em'}} id="success-ref">{ref_}</div>
-              </div>
-              <br/>
-              <button className="btn btn-primary" style={{display:'inline-flex'}} onClick={() => window.location.reload()}>
-                <span>Book Another Transfer</span><span className="btn-arrow">→</span>
-              </button>
+        <div className="form-card">
+          <div className="form-step" style={{textAlign:'center',padding:'2rem 0'}}>
+            <div style={{width:72,height:72,borderRadius:'50%',background:'rgba(74,222,128,0.12)',border:'1.5px solid rgba(74,222,128,0.35)',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 1.5rem',fontSize:'2rem'}}>✓</div>
+            <h2 style={{fontSize:'1.5rem',fontWeight:700,color:'var(--text)',marginBottom:'.75rem'}}>Booking Confirmed!</h2>
+            <p style={{fontSize:'.9rem',color:'var(--text-muted)',maxWidth:400,margin:'0 auto 1.5rem',lineHeight:1.7}}>Your luxury transfer has been reserved. A confirmation email has been sent to your inbox.</p>
+            <div style={{display:'inline-block',background:'rgba(200,164,93,0.1)',border:'1px solid rgba(200,164,93,0.3)',borderRadius:12,padding:'1rem 2rem',marginBottom:'2rem'}}>
+              <div style={{fontSize:'.72rem',letterSpacing:'.2em',textTransform:'uppercase',color:'var(--text-muted)',marginBottom:'.3rem'}}>Booking Reference</div>
+              <div style={{fontSize:'1.4rem',fontWeight:700,color:'var(--gold)',letterSpacing:'.1em'}}>{ref_}</div>
             </div>
+            <br/>
+            <button className="btn-next" style={{display:'inline-flex'}} onClick={() => window.location.reload()}>
+              Book Another Transfer →
+            </button>
           </div>
         </div>
       </div>
