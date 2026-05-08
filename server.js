@@ -1,0 +1,207 @@
+require('dotenv').config();
+const express    = require('express');
+const nodemailer = require('nodemailer');
+const path       = require('path');
+
+const app  = express();
+const PORT = process.env.PORT || 5000;
+
+app.use(express.json());
+
+/* ── Serve React build in production ─────────────────── */
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(path.join(__dirname, 'dist')));
+}
+
+/* ── Email endpoint ───────────────────────────────────── */
+app.post('/api/send-email', async (req, res) => {
+  const d = req.body;
+  if (!d?.email || !d?.name) {
+    return res.status(400).json({ ok: false, error: 'Missing required fields' });
+  }
+
+  const transporter = nodemailer.createTransport({
+    host:   process.env.SMTP_HOST || 'smtp.hostinger.com',
+    port:   parseInt(process.env.SMTP_PORT || '465'),
+    secure: true,
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
+    },
+    tls: { rejectUnauthorized: false },
+  });
+
+  try {
+    await transporter.sendMail({
+      from:    `"Swiss Elite Chauffeur" <${process.env.SMTP_USER}>`,
+      to:      d.email,
+      subject: `Booking Confirmed — ${d.ref} | Swiss Elite Chauffeur`,
+      html:    buildEmail(d),
+    });
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('[Mailer]', err.message);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+/* ── React catch-all in production ───────────────────── */
+if (process.env.NODE_ENV === 'production') {
+  app.get('*', (req, res) =>
+    res.sendFile(path.join(__dirname, 'dist', 'index.html'))
+  );
+}
+
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+/* ── Email HTML template ──────────────────────────────── */
+function fmt(d) { return d ? new Date(d + 'T00:00:00').toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }) : '—'; }
+function fmtT(t) {
+  if (!t) return '—';
+  const [h, m] = t.split(':').map(Number);
+  const ampm = h < 12 ? 'AM' : 'PM';
+  return `${h % 12 || 12}:${String(m).padStart(2,'0')} ${ampm}`;
+}
+function row(label, val) {
+  return `<tr>
+    <td style="padding:10px 16px;border-bottom:1px solid rgba(255,255,255,0.05);font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#5a5750;vertical-align:top;white-space:nowrap">${label}</td>
+    <td style="padding:10px 16px;border-bottom:1px solid rgba(255,255,255,0.05);font-size:13px;font-weight:500;color:#f0ede6;vertical-align:top">${val}</td>
+  </tr>`;
+}
+
+function buildEmail(d) {
+  const isRound   = d.tripType === 'round-trip';
+  const tripLabel = isRound ? 'Round Trip' : 'One Way';
+  const returnRows = isRound && d.returnDate
+    ? row('Return Date', fmt(d.returnDate)) + (d.returnTime ? row('Return Time', fmtT(d.returnTime)) : '')
+    : '';
+  const fareRows = d.estimatedDistance
+    ? row('Est. Distance', `~${d.estimatedDistance} km`) +
+      (d.estimatedFare ? row('Estimated Fare', `<strong style="color:#C8A45D;font-size:15px">CHF ${Number(d.estimatedFare).toLocaleString()}</strong>`) : '')
+    : '';
+  const notesBlock = d.notes
+    ? `<tr><td colspan="2" style="padding:16px">
+        <div style="background:#111;border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:14px 18px">
+          <div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#C8A45D;margin-bottom:6px">SPECIAL REQUESTS</div>
+          <div style="font-size:13px;color:#9e9b93;line-height:1.6">${d.notes}</div>
+        </div></td></tr>`
+    : '';
+
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Booking Confirmed</title></head>
+<body style="margin:0;padding:0;background:#000;font-family:Arial,sans-serif">
+<div style="display:none;max-height:0;overflow:hidden">Your Swiss Elite transfer is confirmed ✓ Ref: ${d.ref}</div>
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#000;padding:40px 16px"><tr><td align="center">
+<table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%">
+
+  <!-- Logo -->
+  <tr><td align="center" style="padding:0 0 32px">
+    <div style="font-size:22px;font-weight:700;letter-spacing:5px;color:#fff">◆ SWISS <span style="color:#C8A45D">ELITE</span></div>
+    <div style="font-size:9px;letter-spacing:6px;text-transform:uppercase;color:#5a5750;margin-top:6px">LUXURY CHAUFFEUR TRANSFERS</div>
+  </td></tr>
+
+  <!-- Card -->
+  <tr><td style="background:#0d0d0d;border:1px solid rgba(255,255,255,0.07);border-radius:16px;overflow:hidden">
+    <div style="height:1px;background:linear-gradient(90deg,#0d0d0d,#C8A45D,#0d0d0d)"></div>
+
+    <!-- Ref banner -->
+    <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding:28px 28px 20px;border-bottom:1px solid rgba(255,255,255,0.06)">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+        <td style="background:rgba(200,164,93,0.09);border:1px solid rgba(200,164,93,0.28);border-radius:12px;padding:18px 22px">
+          <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+            <td>
+              <div style="font-size:9px;letter-spacing:3px;text-transform:uppercase;color:#5a5750;margin-bottom:6px">BOOKING REFERENCE</div>
+              <div style="font-size:24px;font-weight:700;color:#C8A45D;letter-spacing:3px">${d.ref}</div>
+            </td>
+            <td align="right" valign="middle">
+              <div style="background:rgba(74,222,128,0.1);border:1px solid rgba(74,222,128,0.3);border-radius:20px;padding:7px 16px;display:inline-block">
+                <span style="font-size:11px;font-weight:700;color:#4ade80;letter-spacing:1.5px">✓ CONFIRMED</span>
+              </div>
+            </td>
+          </tr></table>
+        </td>
+      </tr></table>
+    </td></tr></table>
+
+    <!-- Greeting -->
+    <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding:24px 28px 8px">
+      <div style="font-size:19px;font-weight:600;color:#f0ede6;margin-bottom:10px">Dear ${d.name},</div>
+      <div style="font-size:14px;color:#9e9b93;line-height:1.7">Your luxury transfer has been confirmed. A professional chauffeur will be ready at the pickup location. Please find your complete travel details below.</div>
+    </td></tr></table>
+
+    <!-- Route -->
+    <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding:20px 28px">
+      <div style="font-size:9px;letter-spacing:3px;text-transform:uppercase;color:#C8A45D;margin-bottom:12px">TRANSFER ROUTE</div>
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#111;border:1px solid rgba(255,255,255,0.07);border-radius:12px"><tr>
+        <td style="width:36px;padding:20px 0 20px 18px;vertical-align:top">
+          <div style="width:10px;height:10px;background:#C8A45D;border-radius:50%;margin-bottom:4px"></div>
+          <div style="width:1px;height:24px;background:rgba(200,164,93,0.35);margin:0 0 4px 4px"></div>
+          <div style="width:10px;height:10px;background:#C8A45D;border-radius:2px"></div>
+        </td>
+        <td style="padding:16px 18px 16px 8px;vertical-align:top">
+          <div style="margin-bottom:18px">
+            <div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#5a5750;margin-bottom:4px">PICKUP</div>
+            <div style="font-size:14px;font-weight:600;color:#f0ede6">${d.pickup || '—'}</div>
+          </div>
+          <div>
+            <div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#5a5750;margin-bottom:4px">DROP-OFF</div>
+            <div style="font-size:14px;font-weight:600;color:#f0ede6">${d.dropoff || '—'}</div>
+          </div>
+        </td>
+      </tr></table>
+    </td></tr></table>
+
+    <!-- Details table -->
+    <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding:0 28px 20px">
+      <div style="font-size:9px;letter-spacing:3px;text-transform:uppercase;color:#C8A45D;margin-bottom:12px">BOOKING DETAILS</div>
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#111;border:1px solid rgba(255,255,255,0.07);border-radius:12px;overflow:hidden">
+        ${row('Passenger', d.name)}
+        ${row('Phone', d.phone || '—')}
+        ${row('Vehicle', d.vehicle || '—')}
+        ${row('Trip Type', tripLabel)}
+        ${row('Pickup Date', fmt(d.date))}
+        ${row('Pickup Time', fmtT(d.time))}
+        ${returnRows}
+        ${fareRows}
+        ${notesBlock}
+      </table>
+    </td></tr></table>
+
+    <!-- What to expect -->
+    <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding:0 28px 24px">
+      <div style="font-size:9px;letter-spacing:3px;text-transform:uppercase;color:#C8A45D;margin-bottom:12px">WHAT TO EXPECT</div>
+      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#111;border:1px solid rgba(255,255,255,0.07);border-radius:12px">
+        <tr><td style="padding:14px 18px 4px"><table cellpadding="0" cellspacing="0" border="0"><tr>
+          <td style="color:#C8A45D;font-size:12px;width:18px;vertical-align:top;padding-top:2px">◆</td>
+          <td style="padding-left:10px;font-size:13px;color:#9e9b93;line-height:1.6">Your chauffeur will contact you <strong style="color:#f0ede6">30 minutes before pickup</strong> with their details.</td>
+        </tr></table></td></tr>
+        <tr><td style="padding:4px 18px"><table cellpadding="0" cellspacing="0" border="0"><tr>
+          <td style="color:#C8A45D;font-size:12px;width:18px;vertical-align:top;padding-top:2px">◆</td>
+          <td style="padding-left:10px;font-size:13px;color:#9e9b93;line-height:1.6">For changes, contact us at least <strong style="color:#f0ede6">24 hours in advance</strong>.</td>
+        </tr></table></td></tr>
+        <tr><td style="padding:4px 18px 14px"><table cellpadding="0" cellspacing="0" border="0"><tr>
+          <td style="color:#C8A45D;font-size:12px;width:18px;vertical-align:top;padding-top:2px">◆</td>
+          <td style="padding-left:10px;font-size:13px;color:#9e9b93;line-height:1.6">Keep this email as your confirmation. Reference: <strong style="color:#C8A45D">${d.ref}</strong></td>
+        </tr></table></td></tr>
+      </table>
+    </td></tr></table>
+
+    <!-- Footer bar -->
+    <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="background:rgba(200,164,93,0.07);border-top:1px solid rgba(200,164,93,0.2);padding:18px 28px">
+      <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>
+        <td><div style="font-size:12px;color:#9e9b93">Email: <a href="mailto:info@swisselitetransfers.com" style="color:#C8A45D;text-decoration:none">info@swisselitetransfers.com</a></div></td>
+        <td align="right"><div style="font-size:14px;font-weight:700;letter-spacing:3px;color:#fff">◆ SWISS <span style="color:#C8A45D">ELITE</span></div></td>
+      </tr></table>
+    </td></tr></table>
+  </td></tr>
+
+  <!-- Disclaimer -->
+  <tr><td align="center" style="padding:20px 8px 0">
+    <p style="font-size:11px;color:#3a3935;line-height:1.6;margin:0;text-align:center">
+      This email was sent to ${d.email} because a booking was placed at book.swisselitetransfers.com.<br>
+      Swiss Elite Chauffeur · Geneva, Switzerland
+    </p>
+  </td></tr>
+</table>
+</td></tr></table>
+</body></html>`;
+}
