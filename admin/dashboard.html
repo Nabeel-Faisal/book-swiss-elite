@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin Dashboard — Swiss Elite</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="admin.css"/>
+</head>
+<body>
+
+<!-- ===== SIDEBAR ===== -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-logo">
+      <span class="logo-icon">◆</span>
+      <span class="logo-text">SWISS <em>ELITE</em></span>
+    </div>
+    <button class="sidebar-collapse" id="sidebar-toggle" title="Collapse sidebar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 17l-5-5 5-5M18 17l-5-5 5-5"/></svg>
+    </button>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Main</div>
+    <a class="nav-item active" data-page="overview">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      <span>Dashboard</span>
+    </a>
+    <a class="nav-item" data-page="bookings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>
+      <span>Bookings</span>
+      <span class="nav-badge" id="badge-bookings">0</span>
+    </a>
+    <a class="nav-item" data-page="vehicles">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 17H3a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h16l2 4v4a2 2 0 0 1-2 2h-2"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/><path d="M3 11h18"/></svg>
+      <span>Vehicles</span>
+    </a>
+    <a class="nav-item" data-page="customers">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      <span>Customers</span>
+    </a>
+
+    <div class="nav-section-label">Configuration</div>
+    <a class="nav-item" data-page="pricing">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      <span>Pricing</span>
+    </a>
+    <a class="nav-item" data-page="service-areas">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+      <span>Service Areas</span>
+    </a>
+    <a class="nav-item" data-page="form-settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      <span>Form Settings</span>
+    </a>
+
+    <div class="nav-section-label">System</div>
+    <a class="nav-item" data-page="notifications">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      <span>Notifications</span>
+    </a>
+    <a class="nav-item" data-page="admin-users">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <span>Admin Users</span>
+    </a>
+    <a class="nav-item" data-page="analytics">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      <span>Analytics</span>
+    </a>
+    <a class="nav-item" data-page="settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <span>Settings</span>
+    </a>
+
+    <div class="nav-section-label" style="margin-top:auto;padding-top:1rem"></div>
+    <a class="nav-item nav-logout" id="logout-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      <span>Logout</span>
+    </a>
+  </nav>
+</aside>
+
+<!-- ===== MOBILE OVERLAY ===== -->
+<div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+<!-- ===== MAIN WRAPPER ===== -->
+<div class="main-wrapper" id="main-wrapper">
+
+  <!-- TOP NAVBAR -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="menu-toggle" id="menu-toggle">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <div class="page-breadcrumb" id="page-breadcrumb">Dashboard</div>
+    </div>
+    <div class="topbar-center">
+      <div class="search-bar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" placeholder="Search bookings, customers..." id="global-search"/>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <button class="topbar-icon" id="notif-btn" title="Notifications">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <span class="notif-dot" id="notif-dot"></span>
+      </button>
+      <a href="../index.html" target="_blank" class="topbar-icon" title="View Booking Form">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+      </a>
+      <div class="admin-profile" id="admin-profile-btn">
+        <div class="admin-avatar">A</div>
+        <div class="admin-info">
+          <span class="admin-name" id="topbar-name">Admin</span>
+          <span class="admin-role">Superadmin</span>
+        </div>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===== PAGE CONTENT ===== -->
+  <main class="page-content">
+
+    <!-- ======= OVERVIEW ======= -->
+    <section class="page" id="page-overview">
+      <div class="page-head"><h1 class="page-title">Dashboard Overview</h1><span class="page-date" id="today-date"></span></div>
+      <div class="stats-grid" id="stats-grid"></div>
+      <div class="two-col">
+        <div class="panel">
+          <div class="panel-head"><h3>Recent Bookings</h3><button class="btn-text" onclick="navigate('bookings')">View all →</button></div>
+          <div class="table-wrap"><table class="data-table" id="overview-bookings-table"><thead><tr><th>ID</th><th>Customer</th><th>Route</th><th>Date</th><th>Status</th></tr></thead><tbody id="overview-bookings-body"></tbody></table></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><h3>Upcoming Rides</h3></div>
+          <div id="upcoming-rides"></div>
+          <div class="panel-head" style="margin-top:1.5rem"><h3>Quick Stats</h3></div>
+          <div id="quick-stats"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======= BOOKINGS ======= -->
+    <section class="page hidden" id="page-bookings">
+      <div class="page-head">
+        <h1 class="page-title">Bookings</h1>
+        <button class="btn-primary" onclick="openAddBookingModal()">+ New Booking</button>
+      </div>
+      <div class="panel">
+        <div class="table-toolbar">
+          <input class="search-input" type="text" placeholder="Search bookings..." id="booking-search"/>
+          <div class="toolbar-right">
+            <select class="select-input" id="booking-status-filter">
+              <option value="">All Status</option>
+              <option value="pending">Pending</option>
+              <option value="confirmed">Confirmed</option>
+              <option value="in-progress">In Progress</option>
+              <option value="completed">Completed</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+            <button class="btn-outline" onclick="exportCSV('bookings')">Export CSV</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table" id="bookings-table">
+            <thead><tr>
+              <th>Ref ID</th><th>Customer</th><th>Pickup</th><th>Drop-off</th>
+              <th>Date & Time</th><th>Vehicle & Trip</th><th>Status</th>
+              <th>Phone</th><th>Payment</th><th>Actions</th>
+            </tr></thead>
+            <tbody id="bookings-body"></tbody>
+          </table>
+        </div>
+        <div class="pagination" id="bookings-pagination"></div>
+      </div>
+    </section>
+
+    <!-- ======= VEHICLES ======= -->
+    <section class="page hidden" id="page-vehicles">
+      <div class="page-head">
+        <h1 class="page-title">Vehicles</h1>
+        <button class="btn-primary" onclick="openVehicleModal()">+ Add Vehicle</button>
+      </div>
+      <div class="vehicles-grid" id="vehicles-grid"></div>
+    </section>
+
+    <!-- ======= CUSTOMERS ======= -->
+    <section class="page hidden" id="page-customers">
+      <div class="page-head"><h1 class="page-title">Customers</h1><button class="btn-outline" onclick="exportCSV('customers')">Export CSV</button></div>
+      <div class="panel">
+        <div class="table-toolbar">
+          <input class="search-input" type="text" placeholder="Search customers..." id="customer-search"/>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Total Bookings</th><th>Last Booking</th><th>Actions</th></tr></thead>
+            <tbody id="customers-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======= PRICING ======= -->
+    <section class="page hidden" id="page-pricing">
+      <div class="page-head"><h1 class="page-title">Pricing Settings</h1><button class="btn-primary" onclick="savePricing()">Save Changes</button></div>
+      <div class="two-col">
+        <div class="panel">
+          <h3 class="panel-section-title">Base Pricing</h3>
+          <div class="form-grid">
+            <div class="form-field"><label>Currency</label><select class="form-input" id="price-currency"><option value="CHF">CHF — Swiss Franc</option><option value="EUR">EUR — Euro</option></select></div>
+            <div class="form-field"><label>Minimum Transfer Fee</label><input class="form-input" type="number" id="price-min" placeholder="0.00"/></div>
+            <div class="form-field"><label>Base Price per km</label><input class="form-input" type="number" id="price-perkm" placeholder="0.00"/></div>
+            <div class="form-field"><label>Airport Transfer Surcharge</label><input class="form-input" type="number" id="price-airport" placeholder="0.00"/></div>
+            <div class="form-field"><label>Night Rate Surcharge (%)</label><input class="form-input" type="number" id="price-night" placeholder="0"/></div>
+            <div class="form-field"><label>Weekend Surcharge (%)</label><input class="form-input" type="number" id="price-weekend" placeholder="0"/></div>
+          </div>
+        </div>
+        <div class="panel">
+          <h3 class="panel-section-title">Per-Vehicle Pricing</h3>
+          <p style="font-size:.8rem;color:var(--text-muted);margin-bottom:1rem;line-height:1.6">Set individual base price, price per km, and minimum fare for each vehicle. These are shown to clients on the booking form.</p>
+          <div id="vehicle-pricing-list"></div>
+          <div class="info-banner" style="margin-top:1.5rem">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            Fare = Base Price + (Distance × Price/km). Round trip doubles the total.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======= SERVICE AREAS ======= -->
+    <section class="page hidden" id="page-service-areas">
+      <div class="page-head"><h1 class="page-title">Service Areas</h1><button class="btn-primary" onclick="openAddAreaModal()">+ Add Area</button></div>
+      <div class="two-col">
+        <div class="panel">
+          <h3 class="panel-section-title">Active Service Countries</h3>
+          <div id="service-areas-list"></div>
+        </div>
+        <div class="panel">
+          <h3 class="panel-section-title">Coverage Info</h3>
+          <p style="font-size:.82rem;color:var(--text-muted);line-height:1.7;margin-bottom:1rem">Transfers are restricted to the enabled service countries. The booking form automatically validates pickup and drop-off locations against this list.</p>
+          <div class="info-banner">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            Changes sync to the booking form instantly via localStorage.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======= FORM SETTINGS ======= -->
+    <section class="page hidden" id="page-form-settings">
+      <div class="page-head"><h1 class="page-title">Website Form Settings</h1><button class="btn-primary" onclick="saveFormSettings()">Save & Sync</button></div>
+      <div class="two-col">
+        <div class="panel">
+          <h3 class="panel-section-title">Form Behaviour</h3>
+          <div class="toggle-list" id="form-toggles"></div>
+        </div>
+        <div class="panel">
+          <h3 class="panel-section-title">Button & Label Text</h3>
+          <div class="form-grid">
+            <div class="form-field"><label>Step 1 Button Text</label><input class="form-input" id="fs-btn1" placeholder="Continue to Vehicles"/></div>
+            <div class="form-field"><label>Step 2 Button Text</label><input class="form-input" id="fs-btn2" placeholder="Continue to Order"/></div>
+            <div class="form-field"><label>Submit Button Text</label><input class="form-input" id="fs-btnsubmit" placeholder="Book Your Transfer"/></div>
+            <div class="form-field"><label>Step 1 Title</label><input class="form-input" id="fs-title1" placeholder="Ride Details"/></div>
+            <div class="form-field"><label>Step 2 Title</label><input class="form-input" id="fs-title2" placeholder="Choose Your Vehicle"/></div>
+            <div class="form-field"><label>Step 3 Title</label><input class="form-input" id="fs-title3" placeholder="Place Your Order"/></div>
+          </div>
+        </div>
+      </div>
+      <div class="panel" style="margin-top:1.2rem">
+        <h3 class="panel-section-title">Validation Messages</h3>
+        <div class="form-grid col3">
+          <div class="form-field"><label>Location Restriction Message</label><input class="form-input" id="fs-loc-msg" placeholder="Currently available only within Switzerland, France, and Italy."/></div>
+          <div class="form-field"><label>Vehicle Selection Message</label><input class="form-input" id="fs-veh-msg" placeholder="Please select a vehicle to continue."/></div>
+          <div class="form-field"><label>Success Message</label><input class="form-input" id="fs-success-msg" placeholder="Your transfer has been successfully reserved."/></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======= NOTIFICATIONS ======= -->
+    <section class="page hidden" id="page-notifications">
+      <div class="page-head"><h1 class="page-title">Notification Settings</h1><button class="btn-primary" onclick="saveNotifications()">Save Settings</button></div>
+      <div class="two-col">
+        <div class="panel">
+          <h3 class="panel-section-title">Email Notifications</h3>
+          <div class="form-grid">
+            <div class="form-field"><label>SMTP Host</label><input class="form-input" placeholder="smtp.gmail.com"/></div>
+            <div class="form-field"><label>SMTP Port</label><input class="form-input" placeholder="587"/></div>
+            <div class="form-field"><label>From Email</label><input class="form-input" placeholder="bookings@swisselite.com"/></div>
+            <div class="form-field"><label>Admin Alert Email</label><input class="form-input" placeholder="admin@swisselite.com"/></div>
+          </div>
+          <div class="toggle-list">
+            <div class="toggle-item"><span>New booking alert to admin</span><label class="toggle"><input type="checkbox" checked/><span class="toggle-slider"></span></label></div>
+            <div class="toggle-item"><span>Confirmation email to customer</span><label class="toggle"><input type="checkbox" checked/><span class="toggle-slider"></span></label></div>
+            <div class="toggle-item"><span>Cancellation notification</span><label class="toggle"><input type="checkbox" checked/><span class="toggle-slider"></span></label></div>
+            <div class="toggle-item"><span>Payment received alert</span><label class="toggle"><input type="checkbox"/><span class="toggle-slider"></span></label></div>
+          </div>
+        </div>
+        <div class="panel">
+          <h3 class="panel-section-title">WhatsApp Notifications</h3>
+          <div class="form-grid">
+            <div class="form-field"><label>WhatsApp API Token</label><input class="form-input" placeholder="Twilio / Meta Business API"/></div>
+            <div class="form-field"><label>Admin WhatsApp Number</label><input class="form-input" placeholder="+41 XX XXX XX XX"/></div>
+          </div>
+          <div class="toggle-list">
+            <div class="toggle-item"><span>WhatsApp booking alerts</span><label class="toggle"><input type="checkbox"/><span class="toggle-slider"></span></label></div>
+            <div class="toggle-item"><span>Driver assignment notifications</span><label class="toggle"><input type="checkbox"/><span class="toggle-slider"></span></label></div>
+          </div>
+          <div class="info-banner" style="margin-top:1rem">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            WhatsApp API integration ready. Add credentials above to activate.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======= ADMIN USERS ======= -->
+    <section class="page hidden" id="page-admin-users">
+      <div class="page-head"><h1 class="page-title">Admin Users</h1><button class="btn-primary" onclick="openAdminUserModal()">+ Add Admin</button></div>
+      <div class="panel">
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Last Login</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="admin-users-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======= ANALYTICS ======= -->
+    <section class="page hidden" id="page-analytics">
+      <div class="page-head"><h1 class="page-title">Analytics</h1><span class="badge-pill">Live Preview</span></div>
+      <div class="stats-grid" id="analytics-stats"></div>
+      <div class="two-col">
+        <div class="panel"><div class="panel-head"><h3>Booking Trends</h3></div><div class="chart-placeholder"><div class="chart-bars" id="booking-chart"></div><p>Monthly booking volume</p></div></div>
+        <div class="panel"><div class="panel-head"><h3>Vehicle Popularity</h3></div><div id="vehicle-popularity"></div></div>
+      </div>
+      <div class="two-col">
+        <div class="panel"><div class="panel-head"><h3>Popular Routes</h3></div><div id="popular-routes"></div></div>
+        <div class="panel"><div class="panel-head"><h3>Revenue Overview</h3></div><div class="chart-placeholder"><p style="color:var(--gold)">Connect Stripe to unlock revenue analytics</p><button class="btn-outline" style="margin-top:1rem">Configure Stripe</button></div></div>
+      </div>
+    </section>
+
+    <!-- ======= SETTINGS ======= -->
+    <section class="page hidden" id="page-settings">
+      <div class="page-head"><h1 class="page-title">Business Settings</h1><button class="btn-primary" onclick="saveSettings()">Save Changes</button></div>
+      <div class="two-col">
+        <div class="panel">
+          <h3 class="panel-section-title">Company Information</h3>
+          <div class="form-grid">
+            <div class="form-field"><label>Company Name</label><input class="form-input" id="s-company" placeholder="Swiss Elite Chauffeur"/></div>
+            <div class="form-field"><label>Phone Number</label><input class="form-input" id="s-phone" placeholder="+41 XX XXX XX XX"/></div>
+            <div class="form-field"><label>WhatsApp Number</label><input class="form-input" id="s-whatsapp" placeholder="+41 XX XXX XX XX"/></div>
+            <div class="form-field"><label>Email</label><input class="form-input" id="s-email" placeholder="info@swisselite.com"/></div>
+            <div class="form-field"><label>Address</label><input class="form-input" id="s-address" placeholder="Geneva, Switzerland"/></div>
+            <div class="form-field"><label>Website</label><input class="form-input" id="s-website" placeholder="www.swisselite.com"/></div>
+          </div>
+        </div>
+        <div class="panel">
+          <h3 class="panel-section-title">Regional Settings</h3>
+          <div class="form-grid">
+            <div class="form-field"><label>Default Currency</label><select class="form-input" id="s-currency"><option>CHF</option><option>EUR</option><option>USD</option></select></div>
+            <div class="form-field"><label>Timezone</label><select class="form-input" id="s-timezone"><option>Europe/Zurich</option><option>Europe/Paris</option><option>Europe/Rome</option></select></div>
+            <div class="form-field"><label>Date Format</label><select class="form-input" id="s-dateformat"><option>DD/MM/YYYY</option><option>MM/DD/YYYY</option><option>YYYY-MM-DD</option></select></div>
+            <div class="form-field"><label>Language</label><select class="form-input" id="s-lang"><option>English</option><option>French</option><option>German</option><option>Italian</option></select></div>
+          </div>
+          <h3 class="panel-section-title" style="margin-top:1.5rem">Integrations</h3>
+          <div class="form-grid">
+            <div class="form-field"><label>Stripe Public Key</label><input class="form-input" id="s-stripe-pub" placeholder="pk_live_..."/></div>
+            <div class="form-field"><label>Google Places API Key</label><input class="form-input" id="s-google" placeholder="AIzaSy..."/></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ===== MODALS ===== -->
+<!-- Vehicle Modal -->
+<div class="modal-backdrop hidden" id="vehicle-modal">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="vehicle-modal-title">Add Vehicle</h3>
+      <button class="modal-close" onclick="closeModal('vehicle-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="img-upload-area" id="img-upload-area" onclick="document.getElementById('vehicle-img-input').click()">
+        <img id="vehicle-img-preview" src="" alt="" style="display:none;width:100%;height:100%;object-fit:cover;border-radius:10px"/>
+        <div id="img-upload-placeholder">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="32"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          <p>Click to upload vehicle image</p>
+          <span>JPG, PNG — Max 5MB</span>
+        </div>
+        <input type="file" id="vehicle-img-input" accept="image/*" style="display:none"/>
+      </div>
+      <div class="form-grid">
+        <div class="form-field"><label>Vehicle Name *</label><input class="form-input" id="v-name" placeholder="e.g. Mercedes S-Class"/></div>
+        <div class="form-field"><label>Category *</label><input class="form-input" id="v-category" placeholder="e.g. Ultra-Luxury Sedan"/></div>
+        <div class="form-field"><label>Passengers</label><input class="form-input" type="number" id="v-passengers" placeholder="4" min="1" max="20"/></div>
+        <div class="form-field"><label>Luggage Capacity</label><input class="form-input" type="number" id="v-luggage" placeholder="3" min="0" max="20"/></div>
+        <div class="form-field"><label>Badge Label</label><input class="form-input" id="v-badge" placeholder="e.g. Flagship"/></div>
+        <div class="form-field"><label>Badge Style</label><select class="form-input" id="v-badge-type"><option value="green">Green (Electric)</option><option value="gold">Gold (Premium)</option><option value="silver">Silver (Group)</option></select></div>
+      </div>
+      <div class="form-field" style="margin-top:.75rem"><label>Features (comma separated)</label><input class="form-input" id="v-features" placeholder="Massage Seats, Executive Class, Climate Control"/></div>
+      <div class="form-field" style="margin-top:.75rem"><label>Description</label><textarea class="form-input" id="v-desc" rows="2" placeholder="Brief vehicle description..."></textarea></div>
+      <input type="hidden" id="v-id"/>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-ghost" onclick="closeModal('vehicle-modal')">Cancel</button>
+      <button class="btn-primary" onclick="saveVehicle()">Save Vehicle</button>
+    </div>
+  </div>
+</div>
+
+<!-- Booking Detail Modal -->
+<div class="modal-backdrop hidden" id="booking-modal">
+  <div class="modal modal-lg">
+    <div class="modal-head"><h3>Booking Details</h3><button class="modal-close" onclick="closeModal('booking-modal')">✕</button></div>
+    <div class="modal-body" id="booking-detail-body"></div>
+    <div class="modal-foot">
+      <button class="btn-ghost" onclick="closeModal('booking-modal')">Close</button>
+      <button class="btn-primary" onclick="saveBookingStatus()">Update Status</button>
+    </div>
+  </div>
+</div>
+
+<!-- Admin User Modal -->
+<div class="modal-backdrop hidden" id="admin-user-modal">
+  <div class="modal">
+    <div class="modal-head"><h3 id="admin-user-modal-title">Add Admin User</h3><button class="modal-close" onclick="closeModal('admin-user-modal')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-field"><label>Full Name *</label><input class="form-input" id="au-name" placeholder="John Doe"/></div>
+        <div class="form-field"><label>Email *</label><input class="form-input" type="email" id="au-email" placeholder="john@swisselite.com"/></div>
+        <div class="form-field"><label>Password *</label><input class="form-input" type="password" id="au-pass" placeholder="Min 8 characters"/></div>
+        <div class="form-field"><label>Role</label><select class="form-input" id="au-role"><option value="superadmin">Super Admin</option><option value="manager">Manager</option><option value="operator">Operator</option></select></div>
+      </div>
+      <input type="hidden" id="au-id"/>
+    </div>
+    <div class="modal-foot"><button class="btn-ghost" onclick="closeModal('admin-user-modal')">Cancel</button><button class="btn-primary" onclick="saveAdminUser()">Save</button></div>
+  </div>
+</div>
+
+<!-- Confirm Modal -->
+<div class="modal-backdrop hidden" id="confirm-modal">
+  <div class="modal modal-sm">
+    <div class="modal-head"><h3 id="confirm-title">Confirm Action</h3><button class="modal-close" onclick="closeModal('confirm-modal')">✕</button></div>
+    <div class="modal-body"><p id="confirm-msg" style="color:var(--text-sec);font-size:.88rem;line-height:1.6"></p></div>
+    <div class="modal-foot"><button class="btn-ghost" onclick="closeModal('confirm-modal')">Cancel</button><button class="btn-danger" id="confirm-action-btn">Confirm</button></div>
+  </div>
+</div>
+
+<!-- ===== VEHICLE PRICING MODAL ===== -->
+<div class="modal-backdrop hidden" id="vehicle-pricing-modal">
+  <div class="modal modal-sm">
+    <div class="modal-head">
+      <h3>Pricing — <span id="vp-modal-title"></span></h3>
+      <button class="modal-close" onclick="closeModal('vehicle-pricing-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:.78rem;color:var(--text-muted);margin-bottom:1.25rem;line-height:1.6">
+        These values are used to calculate the fare shown to clients on the booking form.<br>
+        <strong style="color:var(--gold)">Fare = Base Price + (km × Price/km), minimum applies.</strong>
+      </p>
+      <div class="form-grid" style="grid-template-columns:1fr 1fr">
+        <div class="form-field">
+          <label>Base Price (CHF)</label>
+          <input class="form-input" type="number" id="vp-base-price" placeholder="e.g. 80" min="0" step="1"/>
+          <small style="color:var(--text-muted);font-size:.72rem">Fixed charge per ride</small>
+        </div>
+        <div class="form-field">
+          <label>Price per km (CHF)</label>
+          <input class="form-input" type="number" id="vp-price-per-km" placeholder="e.g. 2.50" min="0" step="0.1"/>
+          <small style="color:var(--text-muted);font-size:.72rem">Multiplied by distance</small>
+        </div>
+        <div class="form-field">
+          <label>Minimum Price (CHF)</label>
+          <input class="form-input" type="number" id="vp-min-price" placeholder="e.g. 80" min="0" step="1"/>
+          <small style="color:var(--text-muted);font-size:.72rem">Floor price for any ride</small>
+        </div>
+        <div class="form-field">
+          <label>Return Ride</label>
+          <div style="padding:.7rem .9rem;background:var(--bg-input);border:1px solid var(--border);border-radius:8px;font-size:.82rem;color:var(--text-sec)">× 2 automatically</div>
+          <small style="color:var(--text-muted);font-size:.72rem">Round trip = one-way × 2</small>
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn-ghost" onclick="closeModal('vehicle-pricing-modal')">Cancel</button>
+      <button class="btn-primary" onclick="saveVehiclePricing()">Save Pricing</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== TOAST ===== -->
+<div id="toast-container"></div>
+
+<script src="admin.js"></script>
+</body>
+</html>

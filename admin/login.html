@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin Login — Swiss Elite</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --gold:#C8A45D;--gold-light:#D9B870;--gold-dim:rgba(200,164,93,0.12);--gold-border:rgba(200,164,93,0.3);
+      --bg:#000;--bg-card:#0d0d0d;--bg-input:#111;
+      --text:#f0ede6;--text-muted:#5a5750;--text-sec:#9e9b93;
+      --border:rgba(255,255,255,0.06);--red:#e05353;
+    }
+    body{font-family:'Poppins',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1rem;-webkit-font-smoothing:antialiased}
+    body::before{content:'';position:fixed;top:-20%;left:50%;transform:translateX(-50%);width:700px;height:500px;background:radial-gradient(ellipse,rgba(200,164,93,0.05) 0%,transparent 70%);pointer-events:none}
+    .login-wrap{width:100%;max-width:420px;animation:fadeUp .5s ease forwards}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+    .brand{text-align:center;margin-bottom:2.5rem}
+    .brand-logo{font-size:1.5rem;font-weight:700;letter-spacing:.22em;color:var(--text)}
+    .brand-logo span{color:var(--gold)}
+    .brand-sub{font-size:.7rem;letter-spacing:.3em;text-transform:uppercase;color:var(--text-muted);margin-top:.3rem}
+    .card{background:var(--bg-card);border:1px solid var(--border);border-radius:20px;padding:2.5rem;position:relative;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+    .card::before{content:'';position:absolute;top:0;left:10%;right:10%;height:1px;background:linear-gradient(90deg,transparent,var(--gold-border),transparent)}
+    .card-title{font-size:1.4rem;font-weight:600;margin-bottom:.3rem}
+    .card-sub{font-size:.8rem;color:var(--text-muted);margin-bottom:2rem}
+    .field{margin-bottom:1.25rem}
+    .label{font-size:.7rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--text-sec);display:block;margin-bottom:.5rem}
+    .input-wrap{position:relative}
+    .input{width:100%;padding:.85rem 1.1rem;background:var(--bg-input);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:'Poppins',sans-serif;font-size:.88rem;outline:none;transition:.25s ease}
+    .input::placeholder{color:var(--text-muted)}
+    .input:focus{border-color:var(--gold);box-shadow:0 0 0 3px var(--gold-dim)}
+    .input.error{border-color:var(--red);box-shadow:0 0 0 3px rgba(224,83,83,.1)}
+    .eye-btn{position:absolute;right:.9rem;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-muted);cursor:pointer;padding:.2rem;font-size:1rem;transition:.2s}
+    .eye-btn:hover{color:var(--text)}
+    .row{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:.5rem}
+    .remember{display:flex;align-items:center;gap:.5rem;cursor:pointer;font-size:.8rem;color:var(--text-sec);user-select:none}
+    .remember input[type=checkbox]{accent-color:var(--gold);width:15px;height:15px;cursor:pointer}
+    .forgot{font-size:.8rem;color:var(--gold);text-decoration:none;transition:.2s}
+    .forgot:hover{color:var(--gold-light)}
+    .btn{width:100%;padding:.95rem;background:linear-gradient(135deg,var(--gold),var(--gold-light));color:#000;font-family:'Poppins',sans-serif;font-size:.85rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;border:none;border-radius:10px;cursor:pointer;transition:.25s ease;position:relative;overflow:hidden}
+    .btn:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(200,164,93,.4)}
+    .btn:active{transform:translateY(0)}
+    .btn:disabled{opacity:.6;cursor:not-allowed;transform:none}
+    .err-msg{font-size:.77rem;color:var(--red);margin-top:.4rem;min-height:1.1em}
+    .divider{text-align:center;margin:1.5rem 0;font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--text-muted);position:relative}
+    .divider::before,.divider::after{content:'';position:absolute;top:50%;width:38%;height:1px;background:var(--border)}
+    .divider::before{left:0}.divider::after{right:0}
+    .hint{background:var(--gold-dim);border:1px solid var(--gold-border);border-radius:10px;padding:.85rem 1rem;margin-top:1.5rem;font-size:.75rem;color:var(--text-sec);line-height:1.6}
+    .hint strong{color:var(--gold)}
+    .spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(0,0,0,.3);border-top-color:#000;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:.4rem}
+    @keyframes spin{to{transform:rotate(360deg)}}
+  </style>
+</head>
+<body>
+  <div class="login-wrap">
+    <div class="brand">
+      <div class="brand-logo">◆ SWISS <span>ELITE</span></div>
+      <div class="brand-sub">Admin Dashboard</div>
+    </div>
+
+    <div class="card">
+      <h1 class="card-title">Welcome back</h1>
+      <p class="card-sub">Sign in to manage your chauffeur fleet</p>
+
+      <form id="login-form" novalidate>
+        <div class="field">
+          <label class="label" for="email">Email Address</label>
+          <input class="input" type="email" id="email" placeholder="admin@swisselite.com" autocomplete="email"/>
+          <p class="err-msg" id="email-err"></p>
+        </div>
+
+        <div class="field">
+          <label class="label" for="password">Password</label>
+          <div class="input-wrap">
+            <input class="input" type="password" id="password" placeholder="Enter your password" autocomplete="current-password" style="padding-right:3rem"/>
+            <button type="button" class="eye-btn" id="eye-toggle" aria-label="Toggle password">👁</button>
+          </div>
+          <p class="err-msg" id="pw-err"></p>
+        </div>
+
+        <div class="row">
+          <label class="remember">
+            <input type="checkbox" id="remember-me"/> Remember me
+          </label>
+          <a href="#" class="forgot">Forgot password?</a>
+        </div>
+
+        <button type="submit" class="btn" id="login-btn">Sign In</button>
+        <p class="err-msg" id="auth-err" style="text-align:center;margin-top:.75rem"></p>
+      </form>
+
+      <div class="hint">
+        <strong>Demo credentials</strong><br>
+        Email: admin@swisselite.com<br>
+        Password: Admin@2026
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function(){
+      if(localStorage.getItem('se_auth')){
+        try{ const a=JSON.parse(localStorage.getItem('se_auth')); if(a.loggedIn) window.location.href='dashboard.html'; }catch(e){}
+      }
+
+      const ADMIN_EMAIL='admin@swisselite.com';
+      const ADMIN_PASS='Admin@2026';
+
+      document.getElementById('eye-toggle').addEventListener('click',function(){
+        const pw=document.getElementById('password');
+        pw.type=pw.type==='password'?'text':'password';
+        this.textContent=pw.type==='password'?'👁':'🙈';
+      });
+
+      document.getElementById('login-form').addEventListener('submit',function(e){
+        e.preventDefault();
+        const email=document.getElementById('email').value.trim();
+        const pass=document.getElementById('password').value;
+        const remember=document.getElementById('remember-me').checked;
+        let valid=true;
+
+        document.getElementById('email-err').textContent='';
+        document.getElementById('pw-err').textContent='';
+        document.getElementById('auth-err').textContent='';
+        document.getElementById('email').classList.remove('error');
+        document.getElementById('password').classList.remove('error');
+
+        if(!email){document.getElementById('email-err').textContent='Email is required.';document.getElementById('email').classList.add('error');valid=false;}
+        if(!pass){document.getElementById('pw-err').textContent='Password is required.';document.getElementById('password').classList.add('error');valid=false;}
+        if(!valid)return;
+
+        const btn=document.getElementById('login-btn');
+        btn.disabled=true;
+        btn.innerHTML='<span class="spinner"></span>Signing in...';
+
+        setTimeout(function(){
+          if(email===ADMIN_EMAIL&&pass===ADMIN_PASS){
+            const session={loggedIn:true,email,name:'Admin',role:'superadmin',token:'se_'+Date.now()};
+            localStorage.setItem('se_auth',JSON.stringify(session));
+            if(remember)localStorage.setItem('se_remember','1');
+            window.location.href='dashboard.html';
+          }else{
+            document.getElementById('auth-err').textContent='Invalid email or password.';
+            btn.disabled=false;btn.textContent='Sign In';
+          }
+        },900);
+      });
+    })();
+  </script>
+</body>
+</html>
