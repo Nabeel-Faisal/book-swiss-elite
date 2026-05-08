@@ -47,7 +47,7 @@ body {
 
 .booking-container {
   width:100%;
-  max-width:880px;
+  max-width:1080px;
 }
 
 /* ── Brand ────────────────────────────────────────── */
@@ -747,7 +747,7 @@ select.input {
 @keyframes spin { to { transform:rotate(360deg); } }
 
 /* ── Responsive ───────────────────────────────────── */
-@media (max-width:860px) {
+@media (max-width:780px) {
   .vehicles-grid { grid-template-columns:repeat(2, 1fr); }
 }
 
