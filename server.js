@@ -2,6 +2,7 @@ require('dotenv').config();
 const express    = require('express');
 const nodemailer = require('nodemailer');
 const path       = require('path');
+const https      = require('https');
 
 const app  = express();
 const PORT = process.env.PORT || 5000;
@@ -12,6 +13,58 @@ app.use(express.json());
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, 'dist')));
 }
+
+/* ── Distance endpoint (Nominatim geocoding + OSRM routing) ── */
+function httpsGet(url, headers) {
+  return new Promise((resolve, reject) => {
+    https.get(url, { headers }, res => {
+      let body = '';
+      res.on('data', c => body += c);
+      res.on('end', () => {
+        try { resolve(JSON.parse(body)); }
+        catch (e) { reject(e); }
+      });
+    }).on('error', reject);
+  });
+}
+
+async function geocode(query) {
+  const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1&countrycodes=ch,fr,it`;
+  const results = await httpsGet(url, { 'User-Agent': 'SwissEliteChauffeur/1.0 (book.swisselitetransfers.com)' });
+  if (!results.length) throw new Error(`No geocoding result for: ${query}`);
+  return { lat: parseFloat(results[0].lat), lng: parseFloat(results[0].lon) };
+}
+
+async function osrmRoute(lat1, lng1, lat2, lng2) {
+  const url = `https://router.project-osrm.org/route/v1/driving/${lng1},${lat1};${lng2},${lat2}?overview=false`;
+  const data = await httpsGet(url, { 'User-Agent': 'SwissEliteChauffeur/1.0' });
+  if (data.code !== 'Ok' || !data.routes.length) throw new Error('OSRM returned no route');
+  return {
+    distanceKm: Math.round(data.routes[0].distance / 1000),
+    durationMin: Math.round(data.routes[0].duration / 60),
+  };
+}
+
+app.get('/api/distance', async (req, res) => {
+  try {
+    const { olat, olng, dlat, dlng, origin, destination } = req.query;
+
+    let p1, p2;
+    if (olat && olng) p1 = { lat: parseFloat(olat), lng: parseFloat(olng) };
+    else if (origin)  p1 = await geocode(origin);
+    else return res.status(400).json({ ok: false, error: 'Missing origin' });
+
+    if (dlat && dlng)      p2 = { lat: parseFloat(dlat), lng: parseFloat(dlng) };
+    else if (destination)  p2 = await geocode(destination);
+    else return res.status(400).json({ ok: false, error: 'Missing destination' });
+
+    const route = await osrmRoute(p1.lat, p1.lng, p2.lat, p2.lng);
+    res.json({ ok: true, ...route });
+  } catch (err) {
+    console.error('[Distance]', err.message);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
 
 /* ── Email endpoint ───────────────────────────────────── */
 app.post('/api/send-email', async (req, res) => {

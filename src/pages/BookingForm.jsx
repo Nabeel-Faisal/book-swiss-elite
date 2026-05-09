@@ -122,6 +122,7 @@ export default function BookingForm() {
   const [errors, setErrors]     = useState({});
   const [vehicles, setVehicles] = useState([]);
   const [routeInfo, setRouteInfo] = useState(null);
+  const [routeLoading, setRouteLoading] = useState(false);
   const [estimatedDist, setEstDist] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted]   = useState(false);
@@ -140,14 +141,22 @@ export default function BookingForm() {
   }, []);
 
   useEffect(() => {
-    if (pickup && dropoff) {
-      const info = estimateRoute(pickup, dropoff);
-      setRouteInfo(info);
-      setEstDist(info.dist);
-    } else {
+    if (!pickup || !dropoff) {
       setRouteInfo(null);
       setEstDist(null);
+      return;
     }
+    let cancelled = false;
+    setRouteLoading(true);
+    setRouteInfo(null);
+    estimateRoute(pickup, dropoff).then(info => {
+      if (!cancelled) {
+        setRouteInfo(info);
+        setEstDist(info.dist);
+        setRouteLoading(false);
+      }
+    });
+    return () => { cancelled = true; };
   }, [pickup, dropoff]);
 
   const isRound = tripType === 'round-trip';
@@ -329,22 +338,29 @@ export default function BookingForm() {
               </div>
 
               {/* Route card */}
-              {routeInfo && (
+              {(routeLoading || routeInfo) && (
                 <div className="route-card">
-                  <div className="route-col">
-                    <span className="route-col-label">EST. DISTANCE</span>
-                    <span className="route-col-val">~{routeInfo.dist} km</span>
-                  </div>
-                  <div className="route-divider"/>
-                  <div className="route-col">
-                    <span className="route-col-label">EST. DURATION</span>
-                    <span className="route-col-val">~{routeInfo.timeStr}</span>
-                  </div>
-                  <div className="route-divider"/>
-                  <div className="route-col">
-                    <span className="route-col-label">TRANSFER TYPE</span>
-                    <span className="route-col-val gold">{routeInfo.type}</span>
-                  </div>
+                  {routeLoading ? (
+                    <div style={{width:'100%',textAlign:'center',padding:'0.5rem 0',color:'var(--text-muted)',fontSize:'0.85rem',letterSpacing:'0.05em'}}>
+                      <svg style={{animation:'spin .8s linear infinite',marginRight:6,verticalAlign:'middle'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+                      Calculating route…
+                    </div>
+                  ) : (<>
+                    <div className="route-col">
+                      <span className="route-col-label">EST. DISTANCE</span>
+                      <span className="route-col-val">~{routeInfo.dist} km</span>
+                    </div>
+                    <div className="route-divider"/>
+                    <div className="route-col">
+                      <span className="route-col-label">EST. DURATION</span>
+                      <span className="route-col-val">~{routeInfo.timeStr}</span>
+                    </div>
+                    <div className="route-divider"/>
+                    <div className="route-col">
+                      <span className="route-col-label">TRANSFER TYPE</span>
+                      <span className="route-col-val gold">{routeInfo.type}</span>
+                    </div>
+                  </>)}
                 </div>
               )}
 
