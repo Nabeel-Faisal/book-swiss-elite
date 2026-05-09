@@ -14,31 +14,55 @@ if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, 'dist')));
 }
 
-/* ── Distance endpoint (Nominatim geocoding + OSRM routing) ── */
+/* ── Distance endpoint (Google Maps primary · OSRM+Nominatim fallback) ── */
 function httpsGet(url, headers) {
   return new Promise((resolve, reject) => {
-    https.get(url, { headers }, res => {
+    const req = https.get(url, { headers }, res => {
       let body = '';
       res.on('data', c => body += c);
       res.on('end', () => {
         try { resolve(JSON.parse(body)); }
-        catch (e) { reject(e); }
+        catch (e) { reject(new Error('JSON parse error')); }
       });
-    }).on('error', reject);
+    });
+    req.on('error', reject);
+    req.setTimeout(8000, () => { req.destroy(); reject(new Error('Request timeout')); });
   });
 }
 
-async function geocode(query) {
-  const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1&countrycodes=ch,fr,it`;
-  const results = await httpsGet(url, { 'User-Agent': 'SwissEliteChauffeur/1.0 (book.swisselitetransfers.com)' });
-  if (!results.length) throw new Error(`No geocoding result for: ${query}`);
+async function googleDistanceMatrix(originStr, destStr, key) {
+  const url = `https://maps.googleapis.com/maps/api/distancematrix/json`
+    + `?origins=${encodeURIComponent(originStr)}`
+    + `&destinations=${encodeURIComponent(destStr)}`
+    + `&mode=driving&key=${key}`;
+  const data = await httpsGet(url, {});
+  const el = data.rows?.[0]?.elements?.[0];
+  if (data.status !== 'OK' || el?.status !== 'OK') {
+    throw new Error(`Google Distance Matrix: ${el?.status || data.status}`);
+  }
+  return {
+    distanceKm: Math.round(el.distance.value / 1000),
+    durationMin: Math.round(el.duration.value / 60),
+  };
+}
+
+async function nominatimGeocode(query) {
+  const url = `https://nominatim.openstreetmap.org/search`
+    + `?q=${encodeURIComponent(query)}&format=json&limit=1&countrycodes=ch,fr,it`;
+  const results = await httpsGet(url, {
+    'User-Agent': 'SwissEliteChauffeur/1.0 (book.swisselitetransfers.com)',
+    'Accept-Language': 'en',
+  });
+  if (!Array.isArray(results) || !results.length) {
+    throw new Error(`No geocoding result for: "${query}"`);
+  }
   return { lat: parseFloat(results[0].lat), lng: parseFloat(results[0].lon) };
 }
 
 async function osrmRoute(lat1, lng1, lat2, lng2) {
   const url = `https://router.project-osrm.org/route/v1/driving/${lng1},${lat1};${lng2},${lat2}?overview=false`;
   const data = await httpsGet(url, { 'User-Agent': 'SwissEliteChauffeur/1.0' });
-  if (data.code !== 'Ok' || !data.routes.length) throw new Error('OSRM returned no route');
+  if (data.code !== 'Ok' || !data.routes?.length) throw new Error('OSRM returned no route');
   return {
     distanceKm: Math.round(data.routes[0].distance / 1000),
     durationMin: Math.round(data.routes[0].duration / 60),
@@ -46,23 +70,43 @@ async function osrmRoute(lat1, lng1, lat2, lng2) {
 }
 
 app.get('/api/distance', async (req, res) => {
+  const { olat, olng, dlat, dlng, origin, destination } = req.query;
+
+  const hasOriginCoords = olat && olng;
+  const hasDestCoords   = dlat && dlng;
+
+  if (!hasOriginCoords && !origin)      return res.status(400).json({ ok: false, error: 'Missing origin' });
+  if (!hasDestCoords   && !destination) return res.status(400).json({ ok: false, error: 'Missing destination' });
+
+  const GOOGLE_KEY = process.env.GOOGLE_MAPS_API_KEY;
+
+  /* ── Strategy 1: Google Maps Distance Matrix (most accurate) ── */
+  if (GOOGLE_KEY) {
+    try {
+      const originStr = hasOriginCoords ? `${olat},${olng}` : origin;
+      const destStr   = hasDestCoords   ? `${dlat},${dlng}` : destination;
+      const result = await googleDistanceMatrix(originStr, destStr, GOOGLE_KEY);
+      return res.json({ ok: true, ...result });
+    } catch (e) {
+      console.warn('[Distance/Google] failed, falling back to OSRM:', e.message);
+    }
+  }
+
+  /* ── Strategy 2: Nominatim geocoding + OSRM routing ── */
   try {
-    const { olat, olng, dlat, dlng, origin, destination } = req.query;
+    const p1 = hasOriginCoords
+      ? { lat: parseFloat(olat), lng: parseFloat(olng) }
+      : await nominatimGeocode(origin);
 
-    let p1, p2;
-    if (olat && olng) p1 = { lat: parseFloat(olat), lng: parseFloat(olng) };
-    else if (origin)  p1 = await geocode(origin);
-    else return res.status(400).json({ ok: false, error: 'Missing origin' });
+    const p2 = hasDestCoords
+      ? { lat: parseFloat(dlat), lng: parseFloat(dlng) }
+      : await nominatimGeocode(destination);
 
-    if (dlat && dlng)      p2 = { lat: parseFloat(dlat), lng: parseFloat(dlng) };
-    else if (destination)  p2 = await geocode(destination);
-    else return res.status(400).json({ ok: false, error: 'Missing destination' });
-
-    const route = await osrmRoute(p1.lat, p1.lng, p2.lat, p2.lng);
-    res.json({ ok: true, ...route });
+    const result = await osrmRoute(p1.lat, p1.lng, p2.lat, p2.lng);
+    return res.json({ ok: true, ...result });
   } catch (err) {
-    console.error('[Distance]', err.message);
-    res.status(500).json({ ok: false, error: err.message });
+    console.error('[Distance/OSRM]', err.message);
+    return res.status(500).json({ ok: false, error: err.message });
   }
 });
 

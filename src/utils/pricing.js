@@ -15,13 +15,13 @@ export async function estimateRoute(pickup, dropoff) {
       params.set('olat', pickup.lat);
       params.set('olng', pickup.lng);
     } else {
-      params.set('origin', [pickup.name, pickup.sub].filter(Boolean).join(', '));
+      params.set('origin', pickup.name);
     }
     if (dropoff.lat != null && dropoff.lng != null) {
       params.set('dlat', dropoff.lat);
       params.set('dlng', dropoff.lng);
     } else {
-      params.set('destination', [dropoff.name, dropoff.sub].filter(Boolean).join(', '));
+      params.set('destination', dropoff.name);
     }
 
     const resp = await fetch('/api/distance?' + params);
