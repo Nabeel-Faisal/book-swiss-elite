@@ -183,9 +183,33 @@ function row(label, val) {
   </tr>`;
 }
 
+function routeBlock(pickupLabel, pickup, dropoff) {
+  return `<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#111;border:1px solid rgba(255,255,255,0.07);border-radius:12px"><tr>
+    <td style="width:36px;padding:20px 0 20px 18px;vertical-align:top">
+      <div style="width:10px;height:10px;background:#C8A45D;border-radius:50%;margin-bottom:4px"></div>
+      <div style="width:1px;height:24px;background:rgba(200,164,93,0.35);margin:0 0 4px 4px"></div>
+      <div style="width:10px;height:10px;background:#C8A45D;border-radius:2px"></div>
+    </td>
+    <td style="padding:16px 18px 16px 8px;vertical-align:top">
+      <div style="margin-bottom:18px">
+        <div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#5a5750;margin-bottom:4px">PICKUP</div>
+        <div style="font-size:14px;font-weight:600;color:#f0ede6">${pickup || '—'}</div>
+      </div>
+      <div>
+        <div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#5a5750;margin-bottom:4px">DROP-OFF</div>
+        <div style="font-size:14px;font-weight:600;color:#f0ede6">${dropoff || '—'}</div>
+      </div>
+    </td>
+  </tr></table>`;
+}
+
 function buildEmail(d) {
   const isRound   = d.tripType === 'round-trip';
   const tripLabel = isRound ? 'Round Trip' : 'One Way';
+
+  const returnPickup  = d.returnPickup  || d.dropoff || '—';
+  const returnDropoff = d.returnDropoff || d.pickup  || '—';
+
   const returnRows = isRound && d.returnDate
     ? row('Return Date', fmt(d.returnDate)) + (d.returnTime ? row('Return Time', fmtT(d.returnTime)) : '')
     : '';
@@ -244,24 +268,12 @@ function buildEmail(d) {
 
     <!-- Route -->
     <table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding:20px 28px">
-      <div style="font-size:9px;letter-spacing:3px;text-transform:uppercase;color:#C8A45D;margin-bottom:12px">TRANSFER ROUTE</div>
-      <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#111;border:1px solid rgba(255,255,255,0.07);border-radius:12px"><tr>
-        <td style="width:36px;padding:20px 0 20px 18px;vertical-align:top">
-          <div style="width:10px;height:10px;background:#C8A45D;border-radius:50%;margin-bottom:4px"></div>
-          <div style="width:1px;height:24px;background:rgba(200,164,93,0.35);margin:0 0 4px 4px"></div>
-          <div style="width:10px;height:10px;background:#C8A45D;border-radius:2px"></div>
-        </td>
-        <td style="padding:16px 18px 16px 8px;vertical-align:top">
-          <div style="margin-bottom:18px">
-            <div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#5a5750;margin-bottom:4px">PICKUP</div>
-            <div style="font-size:14px;font-weight:600;color:#f0ede6">${d.pickup || '—'}</div>
-          </div>
-          <div>
-            <div style="font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#5a5750;margin-bottom:4px">DROP-OFF</div>
-            <div style="font-size:14px;font-weight:600;color:#f0ede6">${d.dropoff || '—'}</div>
-          </div>
-        </td>
-      </tr></table>
+      <div style="font-size:9px;letter-spacing:3px;text-transform:uppercase;color:#C8A45D;margin-bottom:12px">${isRound ? 'OUTBOUND ROUTE' : 'TRANSFER ROUTE'}</div>
+      ${routeBlock('outbound', d.pickup, d.dropoff)}
+      ${isRound ? `
+      <div style="font-size:9px;letter-spacing:3px;text-transform:uppercase;color:#C8A45D;margin-top:20px;margin-bottom:12px">RETURN ROUTE</div>
+      ${routeBlock('return', returnPickup, returnDropoff)}
+      ` : ''}
     </td></tr></table>
 
     <!-- Details table -->
@@ -329,11 +341,16 @@ function buildAdminEmail(d) {
     ['Email',        d.email],
     ['Phone',        d.phone || '—'],
     ['Trip Type',    isRound ? 'Round Trip' : 'One Way'],
-    ['Pickup',       d.pickup || '—'],
-    ['Drop-off',     d.dropoff || '—'],
-    ['Pickup Date',  fmt(d.date)],
-    ['Pickup Time',  fmtT(d.time)],
-    ...(isRound && d.returnDate ? [['Return Date', fmt(d.returnDate)], ['Return Time', fmtT(d.returnTime)]] : []),
+    ['Pickup',           d.pickup || '—'],
+    ['Drop-off',         d.dropoff || '—'],
+    ['Pickup Date',      fmt(d.date)],
+    ['Pickup Time',      fmtT(d.time)],
+    ...(isRound && d.returnDate ? [
+      ['Return Date',     fmt(d.returnDate)],
+      ['Return Time',     fmtT(d.returnTime)],
+      ['Return Pickup',   d.returnPickup  || d.dropoff  || '—'],
+      ['Return Drop-off', d.returnDropoff || d.pickup   || '—'],
+    ] : []),
     ['Vehicle',      d.vehicle || '—'],
     ...(d.estimatedDistance ? [['Est. Distance', `~${d.estimatedDistance} km`]] : []),
     ...(d.estimatedFare     ? [['Estimated Fare', `CHF ${Number(d.estimatedFare).toLocaleString()}`]] : []),
