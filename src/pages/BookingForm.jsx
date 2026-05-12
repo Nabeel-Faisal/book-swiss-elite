@@ -124,6 +124,9 @@ export default function BookingForm() {
   const [routeInfo, setRouteInfo] = useState(null);
   const [routeLoading, setRouteLoading] = useState(false);
   const [estimatedDist, setEstDist] = useState(null);
+  const [returnPickup, setReturnPickup]   = useState(null);
+  const [returnDropoff, setReturnDropoff] = useState(null);
+  const [sameReturnLocations, setSameReturnLocations] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted]   = useState(false);
   const [bookingRef, setBookingRef] = useState('');
@@ -175,6 +178,12 @@ export default function BookingForm() {
       if (!returnDate) errs['return-date'] = 'Please select a return date.';
       else if (returnDate < pickupDate) errs['return-date'] = 'Return date must be on or after pickup date.';
       if (!returnTime) errs['return-time'] = 'Please select a return time.';
+      if (!sameReturnLocations) {
+        if (!returnPickup) errs['return-pickup-location'] = 'Please select a return pickup location.';
+        else if (!ALLOWED_COUNTRIES.includes(returnPickup.country)) errs['return-pickup-location'] = 'Transfers available within Switzerland, France and Italy only.';
+        if (!returnDropoff) errs['return-dropoff-location'] = 'Please select a return drop-off location.';
+        else if (!ALLOWED_COUNTRIES.includes(returnDropoff.country)) errs['return-dropoff-location'] = 'Transfers available within Switzerland, France and Italy only.';
+      }
     }
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -217,6 +226,9 @@ export default function BookingForm() {
       dropoff: dropoff?.name, dropoffSub: dropoff?.sub, dropoffCountry: dropoff?.country,
       date: pickupDate, time: pickupTime,
       returnDate: returnDate || '', returnTime: returnTime || '',
+      sameReturnLocations,
+      returnPickup: isRound && !sameReturnLocations ? returnPickup?.name : (isRound ? dropoff?.name : ''),
+      returnDropoff: isRound && !sameReturnLocations ? returnDropoff?.name : (isRound ? pickup?.name : ''),
       vehicleId: vehicle, vehicle: vehicleName,
       estimatedDistance: estimatedDist || null, estimatedFare: fare,
       status:'pending', payment:'unpaid', notes, source:'website',
@@ -231,6 +243,9 @@ export default function BookingForm() {
         body: JSON.stringify({ ref, name, email, phone, tripType,
           pickup: pickup?.name, dropoff: dropoff?.name,
           date: pickupDate, time: pickupTime, returnDate, returnTime,
+          sameReturnLocations,
+          returnPickup: isRound && !sameReturnLocations ? returnPickup?.name : (isRound ? dropoff?.name : ''),
+          returnDropoff: isRound && !sameReturnLocations ? returnDropoff?.name : (isRound ? pickup?.name : ''),
           vehicle: vehicleName, estimatedDistance: estimatedDist, estimatedFare: fare, notes }),
       }).catch(err => console.error('[Email]', err));
     }).catch(err => console.error('[DB save]', err));
@@ -306,7 +321,7 @@ export default function BookingForm() {
                     ['round-trip', 'Round Trip', '⇄', 'Return journey included'],
                   ].map(([val, label, icon, desc]) => (
                     <button key={val} type="button" className={`trip-btn ${tripType === val ? 'active' : ''}`}
-                      onClick={() => { setTripType(val); if (val !== 'round-trip') { setReturnDate(''); setReturnTime(''); } }}>
+                      onClick={() => { setTripType(val); if (val !== 'round-trip') { setReturnDate(''); setReturnTime(''); setReturnPickup(null); setReturnDropoff(null); setSameReturnLocations(true); } }}>
                       <span className="trip-btn-icon">{icon}</span>
                       <span className="trip-btn-title">{label}</span>
                       <span className="trip-btn-desc">{desc}</span>
@@ -383,22 +398,77 @@ export default function BookingForm() {
               </div>
 
               {isRound && (
-                <div className="field-row">
-                  <div className="field">
-                    <label className="field-label" htmlFor="return-date">Return Date</label>
-                    <input className={`input ${errors['return-date'] ? 'error' : ''}`} type="date" id="return-date"
-                      value={returnDate} min={pickupDate || TODAY} onChange={e => { setReturnDate(e.target.value); clearErr('return-date'); }}/>
-                    {errors['return-date'] && <p className="field-error">{errors['return-date']}</p>}
+                <>
+                  <div className="field-row">
+                    <div className="field">
+                      <label className="field-label" htmlFor="return-date">Return Date</label>
+                      <input className={`input ${errors['return-date'] ? 'error' : ''}`} type="date" id="return-date"
+                        value={returnDate} min={pickupDate || TODAY} onChange={e => { setReturnDate(e.target.value); clearErr('return-date'); }}/>
+                      {errors['return-date'] && <p className="field-error">{errors['return-date']}</p>}
+                    </div>
+                    <div className="field">
+                      <label className="field-label" htmlFor="return-time">Return Time</label>
+                      <select className={`input ${errors['return-time'] ? 'error' : ''}`} id="return-time"
+                        value={returnTime} onChange={e => { setReturnTime(e.target.value); clearErr('return-time'); }}>
+                        {TIME_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                      </select>
+                      {errors['return-time'] && <p className="field-error">{errors['return-time']}</p>}
+                    </div>
                   </div>
-                  <div className="field">
-                    <label className="field-label" htmlFor="return-time">Return Time</label>
-                    <select className={`input ${errors['return-time'] ? 'error' : ''}`} id="return-time"
-                      value={returnTime} onChange={e => { setReturnTime(e.target.value); clearErr('return-time'); }}>
-                      {TIME_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                    </select>
-                    {errors['return-time'] && <p className="field-error">{errors['return-time']}</p>}
+
+                  {/* Return locations toggle */}
+                  <div style={{margin:'0.25rem 0 1rem'}}>
+                    <button
+                      type="button"
+                      onClick={() => { setSameReturnLocations(v => !v); setReturnPickup(null); setReturnDropoff(null); clearErr('return-pickup-location'); clearErr('return-dropoff-location'); }}
+                      style={{
+                        display:'flex', alignItems:'center', gap:'0.75rem',
+                        background:'none', border:'none', cursor:'pointer', padding:0,
+                      }}
+                    >
+                      <div style={{
+                        width:40, height:22, borderRadius:11, flexShrink:0,
+                        background: sameReturnLocations ? 'var(--gold)' : 'var(--bg-hover)',
+                        border: `1px solid ${sameReturnLocations ? 'var(--gold)' : 'var(--border)'}`,
+                        position:'relative', transition:'background 0.2s, border-color 0.2s',
+                      }}>
+                        <div style={{
+                          position:'absolute', top:3,
+                          left: sameReturnLocations ? 19 : 3,
+                          width:14, height:14, borderRadius:'50%',
+                          background:'#fff', transition:'left 0.2s',
+                        }}/>
+                      </div>
+                      <span style={{fontSize:'0.82rem', color:'var(--text-sec)', letterSpacing:'0.02em'}}>
+                        Same pickup &amp; drop-off locations for the return journey
+                      </span>
+                    </button>
                   </div>
-                </div>
+
+                  {/* Custom return locations */}
+                  {!sameReturnLocations && (
+                    <div className="field-row">
+                      <div className="field">
+                        <label className="field-label" htmlFor="return-pickup-location">
+                          <span className="loc-dot loc-dot-a"/>Return Pickup Location
+                        </label>
+                        <LocationAutocomplete id="return-pickup-location" placeholder="City, airport or address…" selected={returnPickup}
+                          onSelect={v => { setReturnPickup(v); clearErr('return-pickup-location'); }}
+                          onClear={() => setReturnPickup(null)} error={errors['return-pickup-location']}/>
+                        {errors['return-pickup-location'] && <p className="field-error">{errors['return-pickup-location']}</p>}
+                      </div>
+                      <div className="field">
+                        <label className="field-label" htmlFor="return-dropoff-location">
+                          <span className="loc-dot loc-dot-b"/>Return Drop-off Location
+                        </label>
+                        <LocationAutocomplete id="return-dropoff-location" placeholder="City, airport or address…" selected={returnDropoff}
+                          onSelect={v => { setReturnDropoff(v); clearErr('return-dropoff-location'); }}
+                          onClear={() => setReturnDropoff(null)} error={errors['return-dropoff-location']}/>
+                        {errors['return-dropoff-location'] && <p className="field-error">{errors['return-dropoff-location']}</p>}
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
 
               <div className="step-footer">
@@ -486,7 +556,17 @@ export default function BookingForm() {
               <div className="order-summary">
                 <div className="order-summary-title">Booking Summary</div>
                 <div className="order-summary-grid">
-                  <div className="os-item"><span className="os-label">Route</span><span className="os-val">{pickup && dropoff ? `${pickup.name} → ${dropoff.name}` : '—'}</span></div>
+                  <div className="os-item"><span className="os-label">Outbound Route</span><span className="os-val">{pickup && dropoff ? `${pickup.name} → ${dropoff.name}` : '—'}</span></div>
+                  {isRound && (
+                    <div className="os-item">
+                      <span className="os-label">Return Route</span>
+                      <span className="os-val">
+                        {sameReturnLocations
+                          ? (dropoff && pickup ? `${dropoff.name} → ${pickup.name}` : '—')
+                          : (returnPickup && returnDropoff ? `${returnPickup.name} → ${returnDropoff.name}` : '—')}
+                      </span>
+                    </div>
+                  )}
                   <div className="os-item"><span className="os-label">Date & Time</span><span className="os-val">{pickupDate ? new Date(pickupDate+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : '—'} {pickupTime && '· '+pickupTime}</span></div>
                   <div className="os-item"><span className="os-label">Vehicle</span><span className="os-val">{vehicle ? resolveVehicleName(vehicle) : '—'}</span></div>
                   <div className="os-item"><span className="os-label">Trip Type</span><span className="os-val">{isRound ? 'Round Trip' : 'One Way'}</span></div>
