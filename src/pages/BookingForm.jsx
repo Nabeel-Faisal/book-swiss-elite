@@ -127,6 +127,9 @@ export default function BookingForm() {
   const [returnPickup, setReturnPickup]   = useState(null);
   const [returnDropoff, setReturnDropoff] = useState(null);
   const [sameReturnLocations, setSameReturnLocations] = useState(true);
+  const [returnRouteInfo, setReturnRouteInfo]     = useState(null);
+  const [returnRouteLoading, setReturnRouteLoading] = useState(false);
+  const [returnEstDist, setReturnEstDist]         = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted]   = useState(false);
   const [bookingRef, setBookingRef] = useState('');
@@ -161,6 +164,25 @@ export default function BookingForm() {
     });
     return () => { cancelled = true; };
   }, [pickup, dropoff]);
+
+  useEffect(() => {
+    if (sameReturnLocations || !returnPickup || !returnDropoff) {
+      setReturnRouteInfo(null);
+      setReturnEstDist(null);
+      return;
+    }
+    let cancelled = false;
+    setReturnRouteLoading(true);
+    setReturnRouteInfo(null);
+    estimateRoute(returnPickup, returnDropoff).then(info => {
+      if (!cancelled) {
+        setReturnRouteInfo(info);
+        setReturnEstDist(info.dist);
+        setReturnRouteLoading(false);
+      }
+    });
+    return () => { cancelled = true; };
+  }, [returnPickup, returnDropoff, sameReturnLocations]);
 
   const isRound = tripType === 'round-trip';
 
@@ -202,6 +224,22 @@ export default function BookingForm() {
     return Object.keys(errs).length === 0;
   }
 
+  function computeFare(vehicleId) {
+    if (!estimatedDist) return null;
+    if (isRound && !sameReturnLocations && returnEstDist) {
+      const outFare = calculateFare(vehicleId, estimatedDist, false, vPricingData);
+      const retFare = calculateFare(vehicleId, returnEstDist, false, vPricingData);
+      if (outFare === null || retFare === null) return null;
+      return outFare + retFare;
+    }
+    return calculateFare(vehicleId, estimatedDist, isRound, vPricingData);
+  }
+
+  function totalDistance() {
+    if (isRound && !sameReturnLocations && returnEstDist) return estimatedDist + returnEstDist;
+    return estimatedDist;
+  }
+
   function goToStep(target) {
     if (target > step) {
       if (step === 1 && !validateStep1()) return;
@@ -217,8 +255,12 @@ export default function BookingForm() {
     setSubmitting(true);
 
     const ref  = generateRef();
-    const fare = estimatedDist ? calculateFare(vehicle, estimatedDist, isRound, vPricingData) : null;
+    const fare = computeFare(vehicle);
+    const totDist = totalDistance();
     const vehicleName = resolveVehicleName(vehicle, vehicles);
+
+    const retPickupName  = isRound && !sameReturnLocations ? returnPickup?.name  : (isRound ? dropoff?.name  : '');
+    const retDropoffName = isRound && !sameReturnLocations ? returnDropoff?.name : (isRound ? pickup?.name   : '');
 
     const booking = {
       id: ref, name, email, phone, tripType,
@@ -227,10 +269,9 @@ export default function BookingForm() {
       date: pickupDate, time: pickupTime,
       returnDate: returnDate || '', returnTime: returnTime || '',
       sameReturnLocations,
-      returnPickup: isRound && !sameReturnLocations ? returnPickup?.name : (isRound ? dropoff?.name : ''),
-      returnDropoff: isRound && !sameReturnLocations ? returnDropoff?.name : (isRound ? pickup?.name : ''),
+      returnPickup: retPickupName, returnDropoff: retDropoffName,
       vehicleId: vehicle, vehicle: vehicleName,
-      estimatedDistance: estimatedDist || null, estimatedFare: fare,
+      estimatedDistance: totDist || null, estimatedFare: fare,
       status:'pending', payment:'unpaid', notes, source:'website',
     };
 
@@ -244,9 +285,8 @@ export default function BookingForm() {
           pickup: pickup?.name, dropoff: dropoff?.name,
           date: pickupDate, time: pickupTime, returnDate, returnTime,
           sameReturnLocations,
-          returnPickup: isRound && !sameReturnLocations ? returnPickup?.name : (isRound ? dropoff?.name : ''),
-          returnDropoff: isRound && !sameReturnLocations ? returnDropoff?.name : (isRound ? pickup?.name : ''),
-          vehicle: vehicleName, estimatedDistance: estimatedDist, estimatedFare: fare, notes }),
+          returnPickup: retPickupName, returnDropoff: retDropoffName,
+          vehicle: vehicleName, estimatedDistance: totDist, estimatedFare: fare, notes }),
       }).catch(err => console.error('[Email]', err));
     }).catch(err => console.error('[DB save]', err));
 
@@ -468,6 +508,33 @@ export default function BookingForm() {
                       </div>
                     </div>
                   )}
+
+                  {/* Return route card */}
+                  {!sameReturnLocations && (returnRouteLoading || returnRouteInfo) && (
+                    <div className="route-card">
+                      {returnRouteLoading ? (
+                        <div style={{width:'100%',textAlign:'center',padding:'0.5rem 0',color:'var(--text-muted)',fontSize:'0.85rem',letterSpacing:'0.05em'}}>
+                          <svg style={{animation:'spin .8s linear infinite',marginRight:6,verticalAlign:'middle'}} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+                          Calculating return route…
+                        </div>
+                      ) : (<>
+                        <div className="route-col">
+                          <span className="route-col-label">RETURN DISTANCE</span>
+                          <span className="route-col-val">~{returnRouteInfo.dist} km</span>
+                        </div>
+                        <div className="route-divider"/>
+                        <div className="route-col">
+                          <span className="route-col-label">RETURN DURATION</span>
+                          <span className="route-col-val">~{returnRouteInfo.timeStr}</span>
+                        </div>
+                        <div className="route-divider"/>
+                        <div className="route-col">
+                          <span className="route-col-label">TOTAL DISTANCE</span>
+                          <span className="route-col-val gold">~{estimatedDist + returnRouteInfo.dist} km</span>
+                        </div>
+                      </>)}
+                    </div>
+                  )}
                 </>
               )}
 
@@ -488,7 +555,7 @@ export default function BookingForm() {
               </div>
               <div className="vehicles-grid">
                 {displayVehicles.map(v => {
-                  const fare = estimatedDist ? calculateFare(v.id, estimatedDist, isRound, vPricingData) : null;
+                  const fare = computeFare(v.id);
                   return (
                     <div key={v.id} className={`vehicle-card ${vehicle === v.id ? 'selected' : ''}`}
                       role="radio" aria-checked={vehicle === v.id} tabIndex={0}
@@ -520,7 +587,7 @@ export default function BookingForm() {
                         <div className="v-fare">
                           <div className="v-fare-meta">
                             <span className="v-fare-type">{isRound ? 'Round Trip' : 'One Way'}</span>
-                            <span className="v-fare-dist">~{estimatedDist} km</span>
+                            <span className="v-fare-dist">~{totalDistance()} km</span>
                           </div>
                           <span className="v-fare-val">CHF {fare.toLocaleString()}</span>
                         </div>
